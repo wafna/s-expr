@@ -3,10 +3,6 @@ package wafna.sexpr
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.Test
 
-fun assertAtom(expected: SAtom, actual: String) {
-    assertEquals(String(expected.data), actual)
-}
-
 class TestParser {
     @Test
     fun test() {
@@ -15,29 +11,29 @@ class TestParser {
         }
         parse("[a]".toCharStream()).apply {
             assertEquals(exprs.size, 1)
-            assertAtom(exprs[0] as SAtom, "a")
+            assertAtom(exprs[0], "a")
         }
         parse("[a bc]".toCharStream()).apply {
             assertEquals(exprs.size, 2)
-            assertAtom(exprs[0] as SAtom, "a")
-            assertAtom(exprs[1] as SAtom, "bc")
+            assertAtom(exprs[0], "a")
+            assertAtom(exprs[1], "bc")
         }
         parse("[a [b c]]".toCharStream()).apply {
             assertEquals(exprs.size, 2)
-            assertAtom(exprs[0] as SAtom, "a")
+            assertAtom(exprs[0], "a")
             (exprs[1] as SList).apply {
                 assertEquals(exprs.size, 2)
-                assertAtom(exprs[0] as SAtom, "b")
-                assertAtom(exprs[1] as SAtom, "c")
+                assertAtom(exprs[0], "b")
+                assertAtom(exprs[1], "c")
             }
         }
         parse("[1:a [1:b 1:c]]".toCharStream()).apply {
             assertEquals(exprs.size, 2)
-            assertAtom(exprs[0] as SAtom, "a")
+            assertAtom(exprs[0], "a")
             (exprs[1] as SList).apply {
                 assertEquals(exprs.size, 2)
-                assertAtom(exprs[0] as SAtom, "b")
-                assertAtom(exprs[1] as SAtom, "c")
+                assertAtom(exprs[0], "b")
+                assertAtom(exprs[1], "c")
             }
         }
     }
