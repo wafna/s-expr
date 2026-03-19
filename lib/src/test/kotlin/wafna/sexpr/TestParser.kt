@@ -31,5 +31,14 @@ class TestParser {
                 assertAtom(exprs[1] as SAtom, "c")
             }
         }
+        parse("[1:a [1:b 1:c]]".toCharStream()).apply {
+            assertEquals(exprs.size, 2)
+            assertAtom(exprs[0] as SAtom, "a")
+            (exprs[1] as SList).apply {
+                assertEquals(exprs.size, 2)
+                assertAtom(exprs[0] as SAtom, "b")
+                assertAtom(exprs[1] as SAtom, "c")
+            }
+        }
     }
 }
