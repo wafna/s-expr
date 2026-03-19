@@ -1,6 +1,6 @@
 package wafna.sexpr
 
-class CharStream(private val iterator: Iterator<Char>) {
+class CharStream private constructor(private val iterator: Iterator<Char>) {
     var column = 0
     var line = 0
     var peek: Char? = null
@@ -22,5 +22,9 @@ class CharStream(private val iterator: Iterator<Char>) {
                 ++line
             } else ++column
         }
+    }
+    companion object {
+        fun fromIterator(iterator: Iterator<Char>) = CharStream(iterator)
+        fun fromString(s: String)= CharStream(s.iterator())
     }
 }
