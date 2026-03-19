@@ -16,34 +16,20 @@ fun lexer(input: CharStream): Lexer = object : Lexer {
             input.take()
         return if (eof) Token.EOF
         else {
-            println(input.peek())
-            when (val c = input.peek()) {
-                null -> {
-                    eof = true
-                    Token.EOF
-                }
-
-                '[' -> {
-                    grab(); Token.LBracket
-                }
-
-                ']' -> {
-                    grab(); Token.RBracket
-                }
-
-                ':' -> {
-                    grab(); Token.Colon
-                }
-
+            when (val c = input.take()) {
+                null -> Token.EOF.also { eof = true }
+                '[' -> Token.LBracket
+                ']' -> Token.RBracket
+                ':' -> Token.Colon
                 '"' -> parseString()
-                '-' -> parseNumber()
+                '-' -> parseNumber(c)
                 else -> {
                     if (c.isDigit()) {
-                        parseNumber()
+                        parseNumber(c)
                     } else if (c.isJavaIdentifierStart()) {
-                        parseBare()
+                        parseBare(c)
                     } else {
-                        error("")
+                        error("Unexpected character '$c'")
                     }
                 }
             }
@@ -54,58 +40,68 @@ fun lexer(input: CharStream): Lexer = object : Lexer {
         repeat(count) { put(input.take()?.code?.toByte() ?: 0) }
     }.array()
 
-    private fun grab() = buffer.append(input.take())
-    private fun parseBare(): Token {
-        grab()
+    private fun take() = input.take().also { buffer.append(it) }
+    private fun discard() {
+        input.take()
+    }
+
+    private fun parseBare(init: Char): Token {
+        buffer.append(init)
         while (input.peek()?.isJavaIdentifierPart() == true) {
-            grab()
+            take()
         }
         return Token.LString(buffer.toString())
     }
 
-    private fun parseNumber(): Token {
-        grab()
+    private fun parseNumber(init: Char): Token {
+        buffer.append(init)
         while (true) {
             // Grab anything that could be part of a numeric literal.
             when (val c = input.peek()) {
                 null -> break
-                '-' -> grab()
-                'e' -> grab()
-                'E' -> grab()
-                '.' -> grab()
-                else -> if (c.isDigit()) grab() else break
+                '-' -> take()
+                'e' -> take()
+                'E' -> take()
+                '.' -> take()
+                else -> if (c.isDigit()) take() else break
             }
         }
         val literal = buffer.toString()
-        return literal.toDoubleOrNull()?.let { lit -> Token.LDouble(lit) }
-            ?: literal.toIntOrNull()?.let { Token.LInt(it) }
+        return literal.toLongOrNull()?.let { lit -> Token.LInteger(lit) }
+            ?: literal.toDoubleOrNull()?.let { Token.LDouble(it) }
             ?: error("Invalid numeric literal: $literal")
     }
 
     private fun parseString(): Token {
-        input.take() // discard
+        buffer.clear() // discard leading "
         while (true) {
             when (val c = input.peek()) {
-                null -> error("Unexpected EOF in string literal.")
-                '"' -> break
+                null ->
+                    error("Unexpected EOF in string literal.")
+                '"' -> {
+                    discard()
+                    break
+                }
                 '\\' -> {
-                    input.take() // discard
-                    when (val e = input.take()) {
+                    discard()
+                    when (val e = input.peek()) {
                         '\\' -> buffer.append('\\')
-                        '\t' -> buffer.append('\t')
-                        '\r' -> buffer.append('\r')
-                        '\n' -> buffer.append('\n')
-                        '\b' -> buffer.append('\b')
-                        '\"' -> buffer.append('\"')
+                        't' -> buffer.append('\t')
+                        'r' -> buffer.append('\r')
+                        'n' -> buffer.append('\n')
+                        'b' -> buffer.append('\b')
+                        '"' -> buffer.append('\"')
                         else -> error("Invalid escape sequence: \\$e")
                     }
+                    discard()
                 }
 
                 else ->
                     // Ideally, only printable chars are left behind.
                     if (c.isISOControl())
                         error("Invalid control character: ${"%02x".format(c.code.toByte())}")
-                    else grab()
+                    else
+                        take()
             }
         }
         return Token.LString(buffer.toString())

@@ -6,8 +6,8 @@ sealed interface Token {
     object RBracket : Token
     object Colon : Token
     // Literals
-    class LInt(val value: Int) : Token
-    class LDouble(val value: Double) : Token
-    class LString(val value: String) : Token
+    data class LInteger(val value: Long) : Token
+    data class LDouble(val value: Double) : Token
+    data class LString(val value: String) : Token
     class LBytes(val value: ByteArray) : Token
 }
