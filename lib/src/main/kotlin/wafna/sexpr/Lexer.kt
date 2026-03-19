@@ -37,7 +37,11 @@ fun lexer(input: CharStream): Lexer = object : Lexer {
     }
 
     override fun nextBytes(count: Int): ByteArray = ByteBuffer.allocate(count).apply {
-        repeat(count) { put(input.take()?.code?.toByte() ?: 0) }
+        repeat(count) { nth ->
+            put(
+                input.take()?.code?.toByte() ?: error("Unexpected EOF in byte $nth of run length encoded atom.")
+            )
+        }
     }.array()
 
     private fun take() = input.take().also { buffer.append(it) }
@@ -53,22 +57,13 @@ fun lexer(input: CharStream): Lexer = object : Lexer {
         return Token.LString(buffer.toString())
     }
 
-    private fun parseNumber(init: Char): Token {
+    private fun parseNumber(init: Char): Token.LInteger {
         buffer.append(init)
-        while (true) {
-            // Grab anything that could be part of a numeric literal.
-            when (val c = input.peek()) {
-                null -> break
-                '-' -> take()
-                'e' -> take()
-                'E' -> take()
-                '.' -> take()
-                else -> if (c.isDigit()) take() else break
-            }
+        while (input.peek()?.isDigit() == true) {
+            take()
         }
         val literal = buffer.toString()
-        return literal.toLongOrNull()?.let { lit -> Token.LInteger(lit) }
-            ?: literal.toDoubleOrNull()?.let { Token.LDouble(it) }
+        return literal.toIntOrNull()?.let { lit -> Token.LInteger(lit) }
             ?: error("Invalid numeric literal: $literal")
     }
 
@@ -78,10 +73,12 @@ fun lexer(input: CharStream): Lexer = object : Lexer {
             when (val c = input.peek()) {
                 null ->
                     error("Unexpected EOF in string literal.")
+
                 '"' -> {
                     discard()
                     break
                 }
+
                 '\\' -> {
                     discard()
                     when (val e = input.peek()) {

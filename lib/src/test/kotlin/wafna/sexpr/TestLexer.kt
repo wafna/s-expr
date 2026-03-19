@@ -27,10 +27,6 @@ class TestLexer {
             assertEquals(Token.LInteger(12), lexer.nextToken())
             assertEquals(Token.EOF, lexer.nextToken())
         }
-        withLexer("-12.4") { lexer ->
-            assertEquals(Token.LDouble(-12.4), lexer.nextToken())
-            assertEquals(Token.EOF, lexer.nextToken())
-        }
         withLexer("[\"blab\"]") { lexer ->
             assertEquals(Token.LBracket, lexer.nextToken())
             assertEquals(Token.LString("blab"), lexer.nextToken())

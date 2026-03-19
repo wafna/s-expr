@@ -28,3 +28,5 @@ class CharStream private constructor(private val iterator: Iterator<Char>) {
         fun fromString(input: String)= CharStream(input.iterator())
     }
 }
+
+fun String.toCharStream() = CharStream.fromString(this)
