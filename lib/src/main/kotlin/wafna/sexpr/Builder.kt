@@ -4,10 +4,12 @@ import java.util.*
 
 class SExprBuilder {
     private val exprs = Stack<SExpr>()
-    fun atom(string: String) = atom(string.toByteArray())
     fun atom(bytes: ByteArray) {
         exprs.push(SAtom(bytes))
     }
+
+    operator fun String.unaryPlus() = atom(toByteArray(Charsets.UTF_8))
+    operator fun ByteArray.unaryPlus() = atom(this)
 
     fun list(f: SExprBuilder.() -> Unit) {
         val builder = SExprBuilder()
