@@ -12,6 +12,8 @@ fun lexer(input: CharStream): Lexer = object : Lexer {
     var eof = false
     override fun nextToken(): Token {
         buffer.clear()
+        while (input.peek()?.isWhitespace() == true)
+            input.take()
         return if (eof) Token.EOF
         else {
             println(input.peek())

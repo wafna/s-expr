@@ -25,6 +25,6 @@ class CharStream private constructor(private val iterator: Iterator<Char>) {
     }
     companion object {
         fun fromIterator(iterator: Iterator<Char>) = CharStream(iterator)
-        fun fromString(s: String)= CharStream(s.iterator())
+        fun fromString(input: String)= CharStream(input.iterator())
     }
 }
