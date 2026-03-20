@@ -10,8 +10,6 @@ fun parse(input: CharStream): SList {
     sizes.push(0)
     while (true) {
         when (val token = lexer.nextToken()) {
-            Token.Colon -> error("Colon outside of RLE atom.")
-            Token.EOF -> error("Missing required end of list.")
             Token.LBracket -> {
                 sizes.push(exprs.size)
             }
@@ -31,8 +29,11 @@ fun parse(input: CharStream): SList {
                 val bytes = lexer.nextBytes(count)
                 exprs.push(SAtom(bytes))
             }
+            Token.Colon -> error("Colon outside of RLE atom.")
+            Token.EOF -> error("Missing required end of list.")
         }
     }
+    require(Token.EOF == lexer.nextToken()) { "Input not completely consumed."}
     require(1 == exprs.size)
     return exprs.pop() as SList
 }
