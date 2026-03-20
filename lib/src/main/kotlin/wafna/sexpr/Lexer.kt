@@ -45,9 +45,6 @@ fun lexer(input: CharStream): Lexer = object : Lexer {
     }.array()
 
     private fun take() = input.take().also { buffer.append(it) }
-    private fun discard() {
-        input.take()
-    }
 
     private fun parseBare(init: Char): Token {
         buffer.append(init)
@@ -74,12 +71,12 @@ fun lexer(input: CharStream): Lexer = object : Lexer {
                     error("Unexpected EOF in string literal.")
 
                 '"' -> {
-                    discard()
+                    input.take()
                     break
                 }
 
                 '\\' -> {
-                    discard()
+                    input.take()
                     when (val e = input.peek()) {
                         '\\' -> buffer.append('\\')
                         't' -> buffer.append('\t')
@@ -89,7 +86,7 @@ fun lexer(input: CharStream): Lexer = object : Lexer {
                         '"' -> buffer.append('\"')
                         else -> error("Invalid escape sequence: \\$e")
                     }
-                    discard()
+                    input.take()
                 }
 
                 else ->
