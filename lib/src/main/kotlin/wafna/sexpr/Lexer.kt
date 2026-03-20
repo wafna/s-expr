@@ -68,7 +68,6 @@ fun lexer(input: CharStream): Lexer = object : Lexer {
     }
 
     private fun parseString(): Token {
-        buffer.clear() // discard leading "
         while (true) {
             when (val c = input.peek()) {
                 null ->
