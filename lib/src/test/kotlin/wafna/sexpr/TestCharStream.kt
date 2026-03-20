@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 class TestCharStream {
     @Test
     fun test() {
-        val stream = CharStream.fromString("abc")
+        val stream = CharStream("abc".iterator())
         assertEquals('a', stream.peek())
         assertEquals('a', stream.peek())
         assertEquals('a', stream.take())
