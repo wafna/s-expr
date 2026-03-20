@@ -28,9 +28,14 @@ fun compareSExpr(actual: SExpr, expected: SExpr) {
 class TestWriter {
     fun testExpr(f: SExprBuilder.() -> Unit) {
         val expr = buildSExpr(f)
-        val text = expr.write(ByteArrayOutputStream()).toString()
-        println(text)
-        compareSExpr(expr, parse(text.toCharStream()))
+        for (fmt in DataFormat.entries) {
+            val text = expr.write(ByteArrayOutputStream()) {
+                indent = 2
+                dataFormat = fmt
+            }.toString()
+//            println(text)
+            compareSExpr(expr, parse(text.toCharStream()))
+        }
     }
     @Test
     fun test() {
@@ -38,5 +43,6 @@ class TestWriter {
         testExpr { +"a" }
         testExpr { +"herp"; +"derp" }
         testExpr { +"sentence\r\n"; +"more\n\t" }
+        testExpr { list { +"a" ; +"b" } ; list { +"c" ; +"d" } }
     }
 }
