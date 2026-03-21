@@ -1,8 +1,6 @@
 package wafna.sexpr
 
-import kotlin.collections.forEach
 import kotlin.reflect.KClass
-import kotlin.reflect.KParameter
 import kotlin.reflect.KType
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
@@ -30,43 +28,28 @@ internal interface Adapter<T> {
 class Adapters {
     private val adapters = mutableMapOf<Class<*>, Adapter<*>>().apply {
         put(String::class.java, object : Adapter<String> {
-            override fun toSExpr(obj: String): SExpr =
-                SAtom(obj.toByteArray())
-
-            override fun fromSExpr(expr: SExpr): String =
-                expr.requireAtom().string()
+            override fun toSExpr(obj: String): SExpr = SAtom(obj.toByteArray())
+            override fun fromSExpr(expr: SExpr): String = expr.requireAtom().string()
         })
         put(Boolean::class.java, object : Adapter<Boolean> {
-            override fun toSExpr(obj: Boolean): SExpr =
-                SAtom(obj.toString().toByteArray())
-
+            override fun toSExpr(obj: Boolean): SExpr = SAtom(obj.toString().toByteArray())
             override fun fromSExpr(expr: SExpr): Boolean =
                 expr.requireAtom().string().run { toBooleanStrictOrNull() ?: error("Expected Boolean, got $this.") }
         })
         put(Int::class.java, object : Adapter<Int> {
-            override fun toSExpr(obj: Int): SExpr =
-                SAtom(obj.toString().toByteArray())
-
+            override fun toSExpr(obj: Int): SExpr = SAtom(obj.toString().toByteArray())
             override fun fromSExpr(expr: SExpr): Int =
                 expr.requireAtom().string().run { toIntOrNull() ?: error("Expected Int, got $this.") }
         })
         put(Long::class.java, object : Adapter<Long> {
-            override fun toSExpr(obj: Long): SExpr =
-                SAtom(obj.toString().toByteArray())
-
+            override fun toSExpr(obj: Long): SExpr = SAtom(obj.toString().toByteArray())
             override fun fromSExpr(expr: SExpr): Long =
-                expr.requireAtom().string().run {
-                    toLongOrNull() ?: error("Expected Long, got $this")
-                }
+                expr.requireAtom().string().run { toLongOrNull() ?: error("Expected Long, got $this") }
         })
         put(Double::class.java, object : Adapter<Double> {
-            override fun toSExpr(obj: Double): SExpr =
-                SAtom(obj.toString().toByteArray())
-
+            override fun toSExpr(obj: Double): SExpr = SAtom(obj.toString().toByteArray())
             override fun fromSExpr(expr: SExpr): Double =
-                expr.requireAtom().string().run {
-                    toDoubleOrNull() ?: error("Expected Double, got $this")
-                }
+                expr.requireAtom().string().run { toDoubleOrNull() ?: error("Expected Double, got $this") }
         })
     }
 
@@ -82,11 +65,19 @@ class Adapters {
             ctor.parameters.forEach { param ->
                 require(!param.isVararg) { "Varargs not supported." }
                 val klass = param.type.classifier as KClass<*>
-                val adapter = adapters[klass.java]
-                    ?: error("No adapter found for ${klass.qualifiedName} on param ${param.name}.")
-                put(param.name!!, adapter)
+                if (klass == List::class) {
+                    put(param.name!!, object : Adapter<Any?> {
+                        override fun toSExpr(obj: Any?): SExpr = toSList(param.type, obj)
+                        override fun fromSExpr(expr: SExpr): Any? = fromSList(param.type, expr)
+                    })
+                } else {
+                    val adapter = adapters[klass.java]
+                        ?: error("No adapter found for ${klass.qualifiedName} on param ${param.name}.")
+                    put(param.name!!, adapter)
+                }
             }
         }
+
         val paramsByName = ctor.parameters.associateBy { it.name }
         adapters[kClass.java] = object : Adapter<T> {
             override fun toSExpr(obj: T): SExpr = buildSExpr {
@@ -103,7 +94,7 @@ class Adapters {
             }
 
             override fun fromSExpr(expr: SExpr): T = expr.requireList().run {
-                ctor.callBy(buildMap<KParameter, Any?> {
+                ctor.callBy(buildMap {
                     exprs.forEach { expr ->
                         val list = expr.requireList().exprs
                         require(2 == list.size) { "Malformed value entry: ${list.size}" }
@@ -126,15 +117,19 @@ class Adapters {
             val adapter = adapters[kClass.java] ?: error("No adapter found for ${kClass.qualifiedName}")
             adapter.invokeTo(obj)
         } else if (kClass == List::class) {
-            val kt = kType.arguments.first().type!!.classifier as KClass<*>
-            println("LIST TYPE ${kt.java}")
-            val adapter = adapters[kt.java] ?: error("No adapter found for ${kt.java} in List")
-            buildSExpr {
-                (obj as List<*>).forEach {
-                    any(adapter.invokeTo(it))
-                }
-            }
+            toSList(kType, obj)
         } else error("Required data class or list.")
+    }
+
+    private fun <T> toSList(kType: KType, obj: T): SList {
+        val kt = kType.arguments.first().type!!.classifier as KClass<*>
+        println("LIST TYPE ${kt.java}")
+        val adapter = adapters[kt.java] ?: error("No adapter found for ${kt.java} in List")
+        return buildSExpr {
+            (obj as List<*>).forEach {
+                any(adapter.invokeTo(it))
+            }
+        }
     }
 
     inline fun <reified T> fromSExpr(expr: SExpr): T = fromSExpr(typeOf<T>(), expr)
@@ -146,15 +141,18 @@ class Adapters {
             val adapter = adapters[kClass.java] ?: error("No adapter found for ${kClass.qualifiedName}")
             adapter.invokeFrom(expr) as T
         } else if (kClass == List::class) {
-            val kt = kType.arguments.first().type!!.classifier as KClass<*>
-            println("LIST TYPE ${kt.java}")
-            val adapter = adapters[kt.java] ?: error("No adapter found for ${kt.java} in List")
-            buildList {
-                expr.requireList().exprs.forEach {
-                    add(adapter.invokeFrom(it))
-                }
-            } as T
+            fromSList<T>(kType, expr)
         } else error("Required data class or list.")
+    }
+
+    private fun <T> fromSList(kType: KType, expr: SExpr): T {
+        val kt = kType.arguments.first().type!!.classifier as KClass<*>
+        println("LIST TYPE ${kt.java}")
+        val adapter = adapters[kt.java] ?: error("No adapter found for ${kt.java} in List")
+        @Suppress("UNCHECKED_CAST")
+        return buildList {
+            expr.requireList().exprs.forEach { add(adapter.invokeFrom(it)) }
+        } as T
     }
 }
 
