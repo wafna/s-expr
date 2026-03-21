@@ -11,16 +11,18 @@ class TestWriter {
                 indent = 2
                 dataFormat = fmt
             }.toString()
-//            println(text)
-            compareSExpr(expr, parse(text.toCharStream()))
+            compareSExpr(expr, parse(CharStream.from(text)))
         }
     }
     @Test
     fun test() {
         testExpr {}
-        testExpr { +"a" }
-        testExpr { +"herp"; +"derp" }
-        testExpr { +"sentence\r\n"; +"more\n\t" }
-        testExpr { list { +"a" ; +"b" } ; list { +"c" ; +"d" } }
+        testExpr { atom("a") }
+        testExpr { atom("herp"); atom("derp") }
+        testExpr { atom("sentence\r\n"); atom("more\n\t") }
+        testExpr {
+            list { atom("a"); atom("b") }
+            list { atom("c"); atom("d") }
+        }
     }
 }

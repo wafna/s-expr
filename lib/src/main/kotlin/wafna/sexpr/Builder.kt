@@ -4,12 +4,19 @@ import java.util.*
 
 class SExprBuilder {
     private val exprs = Stack<SExpr>()
+    /**
+     * Add bytes as an atom.
+     */
     fun atom(bytes: ByteArray) {
         exprs.push(SAtom(bytes))
     }
 
-    operator fun String.unaryPlus() = atom(toByteArray(Charsets.UTF_8))
-    operator fun ByteArray.unaryPlus() = atom(this)
+    /**
+     * Add string as an atom.
+     */
+    fun atom(string: String) {
+        exprs.push(SAtom(string.toByteArray()))
+    }
 
     fun list(f: SExprBuilder.() -> Unit) {
         val builder = SExprBuilder()
@@ -21,9 +28,12 @@ class SExprBuilder {
         exprs.push(s)
     }
 
-    fun result(): SList = SList(exprs.take(exprs.size))
+    internal fun result(): SList = SList(exprs.take(exprs.size))
 }
 
+/**
+ * Declare literal s-expressions
+ */
 fun buildSExpr(f: SExprBuilder.() -> Unit): SList = SExprBuilder().run {
     f()
     result()

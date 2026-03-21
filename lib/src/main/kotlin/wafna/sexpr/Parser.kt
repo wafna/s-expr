@@ -2,6 +2,9 @@ package wafna.sexpr
 
 import java.util.*
 
+/**
+ * Translate the input into an s-expression.
+ */
 fun parse(input: CharStream): SList {
     val exprs = Stack<SExpr>()
     val sizes = Stack<Int>().apply { push(0) }
@@ -9,21 +12,19 @@ fun parse(input: CharStream): SList {
     require(lexer.nextToken() == Token.LBracket)
     while (true) {
         when (val token = lexer.nextToken()) {
-            Token.LBracket -> {
+            Token.LBracket ->
                 sizes.push(exprs.size)
-            }
 
             Token.RBracket -> {
                 val size = exprs.size - sizes.pop()
                 val nodes = List(size) { exprs.pop() }.reversed()
                 exprs.push(SList(nodes))
                 if (sizes.isEmpty())
-                    break
+                    break // All lists are closed.
             }
 
-            is Token.LString -> {
+            is Token.LString ->
                 exprs.push(SAtom(token.value.toByteArray(Charsets.UTF_8)))
-            }
 
             is Token.LInteger -> {
                 require(Token.Colon == lexer.nextToken())
@@ -32,10 +33,11 @@ fun parse(input: CharStream): SList {
                 exprs.push(SAtom(bytes))
             }
 
-            Token.Colon -> error("Colon outside of RLE atom.")
-            Token.EOF -> error("Missing required end of list.")
+            Token.Colon -> error("Unexpected colon, ':'.")
+            Token.EOF -> error("Missing required end of list, ']'.")
         }
     }
-//    require(Token.EOF == lexer.nextToken()) { "Input not completely consumed." }
-    return exprs.pop().also { require(exprs.isEmpty()) } as SList
+    return (exprs.pop() as SList).also {
+        require(exprs.isEmpty()) { "Malformed expression: unclosed list(s)." }
+    }
 }

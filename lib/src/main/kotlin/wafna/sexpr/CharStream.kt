@@ -1,5 +1,8 @@
 package wafna.sexpr
 
+/**
+ * Input to the lexer.
+ */
 class CharStream(private val iterator: Iterator<Char>) {
     var column = 0
     var line = 0
@@ -22,5 +25,8 @@ class CharStream(private val iterator: Iterator<Char>) {
                 ++line
             } else ++column
         }
+    }
+    companion object {
+        fun from(s: String) = CharStream(s.iterator())
     }
 }

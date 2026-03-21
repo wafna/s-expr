@@ -4,8 +4,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class TestLexer {
-    fun withLexer(input: String, f: (Lexer) -> Unit) =
-        f(lexer(CharStream(input.iterator())))
+    internal fun withLexer(input: String, f: (Lexer) -> Unit) =
+        f(lexer(CharStream.from(input)))
     @Test
     fun test() {
         withLexer("[") { lexer ->

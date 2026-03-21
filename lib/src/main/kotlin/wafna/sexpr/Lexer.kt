@@ -2,35 +2,37 @@ package wafna.sexpr
 
 import java.nio.ByteBuffer
 
-interface Lexer {
+/**
+ * Produces tokens and byte arrays, the latter for run length encoded atoms.
+ */
+internal interface Lexer {
     fun nextToken(): Token
     fun nextBytes(count: Int): ByteArray
 }
 
-fun lexer(input: CharStream): Lexer = object : Lexer {
+/**
+ * Create a Lexer for S-expressions.
+ */
+internal fun lexer(input: CharStream): Lexer = object : Lexer {
     val buffer = StringBuilder()
-    var eof = false
     override fun nextToken(): Token {
         buffer.clear()
         while (input.peek()?.isWhitespace() == true)
             input.take()
-        return if (eof) Token.EOF
-        else {
-            when (val c = input.take()) {
-                null -> Token.EOF.also { eof = true }
-                '[' -> Token.LBracket
-                ']' -> Token.RBracket
-                ':' -> Token.Colon
-                '"' -> parseString()
-                '-' -> parseNumber(c)
-                else -> {
-                    if (c.isDigit()) {
-                        parseNumber(c)
-                    } else if (c.isJavaIdentifierStart()) {
-                        parseBare(c)
-                    } else {
-                        error("Unexpected character '$c'")
-                    }
+        return when (val c = input.take()) {
+            null -> Token.EOF
+            '[' -> Token.LBracket
+            ']' -> Token.RBracket
+            ':' -> Token.Colon
+            '"' -> parseString()
+            '-' -> parseNumber(c)
+            else -> {
+                if (c.isDigit()) {
+                    parseNumber(c)
+                } else if (c.isJavaIdentifierStart()) {
+                    parseBare(c)
+                } else {
+                    error("Unexpected character '$c'")
                 }
             }
         }
@@ -46,6 +48,7 @@ fun lexer(input: CharStream): Lexer = object : Lexer {
 
     private fun take() = input.take().also { buffer.append(it) }
 
+    // Java identifiers.
     private fun parseBare(init: Char): Token {
         buffer.append(init)
         while (input.peek()?.isJavaIdentifierPart() == true) {
@@ -64,6 +67,7 @@ fun lexer(input: CharStream): Lexer = object : Lexer {
             ?: error("Invalid numeric literal: $literal")
     }
 
+    // TODO incomplete: should support C strings exactly.
     private fun parseString(): Token {
         while (true) {
             when (val c = input.peek()) {

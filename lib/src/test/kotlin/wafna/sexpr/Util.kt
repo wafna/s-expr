@@ -3,9 +3,7 @@ package wafna.sexpr
 import kotlin.test.assertEquals
 import kotlin.test.fail
 
-fun String.toCharStream() = CharStream(iterator())
-
-fun parse(input: String) = parse(input.toCharStream())
+fun parse(input: String) = parse(CharStream.from(input))
 
 fun assertAtom(expected: SExpr, actual: String) {
     val expected = expected as SAtom

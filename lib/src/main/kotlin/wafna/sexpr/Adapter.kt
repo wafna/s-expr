@@ -10,7 +10,7 @@ interface Adapter<T> {
 }
 
 /**
- * The goal is to pay the cost of reflection only once, at start.
+ * A collection of adapters for translating objects to and from s-expressions.
  */
 class Adapters {
     private val adapters = mutableMapOf<Class<*>, Adapter<*>>().apply {
@@ -77,11 +77,10 @@ class Adapters {
                     val property = kClass.memberProperties.firstOrNull { it.name == name }
                         ?: error("${kClass.qualifiedName} has no property with name '$name'")
                     val value = property.get(obj)
-                    println("$name ${value!!.javaClass.name}: $value")
-                    val s = ((adapter.javaClass.methods.find { it.name == "toSExpr" }!!)(adapter, value) as SExpr)
+                    val expr = (adapter.javaClass.methods.find { it.name == "toSExpr" }!!)(adapter, value) as SExpr
                     list {
                         atom(name.toByteArray(Charsets.UTF_8))
-                        any(s)
+                        any(expr)
                     }
                 }
             }

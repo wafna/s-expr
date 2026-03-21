@@ -23,6 +23,9 @@ private const val space = ' '.code
 
 private val CString = "\"([^\"\\\\]*|\\\\.)*\"".toRegex()
 
+/**
+ * Write an s-expression to an output stream.
+ */
 fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}): OutputStream {
     val settings = WriterSettings().apply(settings)
     fun writeBytes(data: ByteArray) {

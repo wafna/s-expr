@@ -7,18 +7,18 @@ class TestBuilder {
     @Test
     fun test() {
         buildSExpr {
-            +"a"
-            +"b"
+            atom("a")
+            atom("b")
         }.run {
             assertEquals(exprs.size, 2)
             assertAtom(exprs[0], "a")
             assertAtom(exprs[1], "b")
         }
         buildSExpr {
-            +"a"
+            atom("a")
             list {
-                +"b"
-                +"c".toByteArray()
+                atom("b")
+                atom("c".toByteArray())
             }
         }.run {
             assertEquals(exprs.size, 2)

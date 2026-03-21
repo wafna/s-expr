@@ -1,6 +1,6 @@
 package wafna.sexpr
 
-sealed interface Token {
+internal sealed interface Token {
     object EOF : Token
     object LBracket : Token
     object RBracket : Token
