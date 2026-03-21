@@ -17,6 +17,10 @@ class SExprBuilder {
         exprs.push(builder.result())
     }
 
+    fun any(s: SExpr) {
+        exprs.push(s)
+    }
+
     fun result(): SList = SList(exprs.take(exprs.size))
 }
 

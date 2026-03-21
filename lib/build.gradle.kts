@@ -8,6 +8,7 @@ repositories {
 }
 
 dependencies {
+    implementation(kotlin("reflect"))
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation(libs.junit.jupiter.engine)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
