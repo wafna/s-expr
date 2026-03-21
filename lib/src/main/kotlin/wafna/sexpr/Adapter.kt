@@ -1,5 +1,6 @@
 package wafna.sexpr
 
+import kotlin.collections.forEach
 import kotlin.reflect.KClass
 import kotlin.reflect.KParameter
 import kotlin.reflect.KType
@@ -7,9 +8,20 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.typeOf
 
-interface Adapter<T> {
+internal interface Adapter<T> {
     fun toSExpr(obj: T): SExpr
     fun fromSExpr(expr: SExpr): T
+    fun invokeTo(obj: Any?): SExpr {
+        val fn = javaClass.methods.find { it.name == "toSExpr" }
+            ?: error("Internal error: missing toSExpr")
+        return fn(this, obj) as SExpr
+    }
+
+    fun invokeFrom(expr: SExpr): Any? {
+        val fn = javaClass.methods.find { it.name == "fromSExpr" }
+            ?: error("Internal error: missing fromSExpr")
+        return fn(this, expr)
+    }
 }
 
 /**
@@ -58,32 +70,31 @@ class Adapters {
         })
     }
 
-    inline fun <reified T : Any> adapt(): Adapter<T> =
-        adapt(typeOf<T>())
+    inline fun <reified T : Any> register() =
+        register<T>(typeOf<T>())
 
-    fun <T : Any> adapt(kType: KType): Adapter<T> {
-        @Suppress("UNCHECKED_CAST") val kClass = kType.classifier as KClass<T>
+    fun <T : Any> register(kType: KType) {
+        @Suppress("UNCHECKED_CAST")
+        val kClass = kType.classifier as KClass<T>
         require(kClass.isData) { "${kClass.qualifiedName} is not a data class" }
         val ctor = kClass.primaryConstructor ?: error("No primary constructor found for ${kClass.qualifiedName}")
         val adaptersByName = buildMap {
             ctor.parameters.forEach { param ->
                 require(!param.isVararg) { "Varargs not supported." }
                 val klass = param.type.classifier as KClass<*>
-                val adapter =
-                    adapters[klass.java] ?: error("No adapter found for ${klass.qualifiedName} on param ${param.name}.")
+                val adapter = adapters[klass.java]
+                    ?: error("No adapter found for ${klass.qualifiedName} on param ${param.name}.")
                 put(param.name!!, adapter)
             }
         }
         val paramsByName = ctor.parameters.associateBy { it.name }
-        return object : Adapter<T> {
+        adapters[kClass.java] = object : Adapter<T> {
             override fun toSExpr(obj: T): SExpr = buildSExpr {
                 adaptersByName.forEach { (name, adapter) ->
                     val property = kClass.memberProperties.firstOrNull { it.name == name }
                         ?: error("${kClass.qualifiedName} has no property with name '$name'")
                     val value = property.get(obj)
-                    val fn = adapter.javaClass.methods.find { it.name == "toSExpr" }
-                        ?: error("Internal error: missing toSExpr")
-                    val expr = fn(adapter, value) as SExpr
+                    val expr = adapter.invokeTo(value)
                     list {
                         atom(name.toByteArray(Charsets.UTF_8))
                         any(expr)
@@ -92,21 +103,58 @@ class Adapters {
             }
 
             override fun fromSExpr(expr: SExpr): T = expr.requireList().run {
-                    ctor.callBy(buildMap<KParameter, Any> {
+                ctor.callBy(buildMap<KParameter, Any?> {
                     exprs.forEach { expr ->
                         val list = expr.requireList().exprs
                         require(2 == list.size) { "Malformed value entry: ${list.size}" }
                         val name = list[0].requireAtom().string()
                         val param = paramsByName[name] ?: error("Unknown param $name")
                         val adapter = adaptersByName[name] ?: error("Unknown param $name")
-                        val fn = adapter.javaClass.methods.find { it.name == "fromSExpr" }
-                            ?: error("Internal error: missing fromSExpr")
-                        val s = fn(adapter, list[1])
+                        val s = adapter.invokeFrom(list[1])
                         put(param, s)
                     }
                 })
             }
         }
+    }
+
+    inline fun <reified T> toSExpr(obj: T): SExpr = toSExpr(typeOf<T>(), obj)
+    @PublishedApi
+    internal fun <T> toSExpr(kType: KType, obj: T): SExpr {
+        val kClass = kType.classifier as KClass<*>
+        return if (kClass.isData) {
+            val adapter = adapters[kClass.java] ?: error("No adapter found for ${kClass.qualifiedName}")
+            adapter.invokeTo(obj)
+        } else if (kClass == List::class) {
+            val kt = kType.arguments.first().type!!.classifier as KClass<*>
+            println("LIST TYPE ${kt.java}")
+            val adapter = adapters[kt.java] ?: error("No adapter found for ${kt.java} in List")
+            buildSExpr {
+                (obj as List<*>).forEach {
+                    any(adapter.invokeTo(it))
+                }
+            }
+        } else error("Required data class or list.")
+    }
+
+    inline fun <reified T> fromSExpr(expr: SExpr): T = fromSExpr(typeOf<T>(), expr)
+    @PublishedApi
+    internal fun <T> fromSExpr(kType: KType, expr: SExpr): T {
+        val kClass = kType.classifier as KClass<*>
+        @Suppress("UNCHECKED_CAST")
+        return if (kClass.isData) {
+            val adapter = adapters[kClass.java] ?: error("No adapter found for ${kClass.qualifiedName}")
+            adapter.invokeFrom(expr) as T
+        } else if (kClass == List::class) {
+            val kt = kType.arguments.first().type!!.classifier as KClass<*>
+            println("LIST TYPE ${kt.java}")
+            val adapter = adapters[kt.java] ?: error("No adapter found for ${kt.java} in List")
+            buildList {
+                expr.requireList().exprs.forEach {
+                    add(adapter.invokeFrom(it))
+                }
+            } as T
+        } else error("Required data class or list.")
     }
 }
 
