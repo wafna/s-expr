@@ -1,6 +1,7 @@
 package wafna.sexpr
 
 import kotlin.reflect.KClass
+import kotlin.reflect.KParameter
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 
@@ -77,7 +78,9 @@ class Adapters {
                     val property = kClass.memberProperties.firstOrNull { it.name == name }
                         ?: error("${kClass.qualifiedName} has no property with name '$name'")
                     val value = property.get(obj)
-                    val expr = (adapter.javaClass.methods.find { it.name == "toSExpr" }!!)(adapter, value) as SExpr
+                    val fn = adapter.javaClass.methods.find { it.name == "toSExpr" }
+                        ?: error("Internal error: missing toSExpr")
+                    val expr = fn(adapter, value) as SExpr
                     list {
                         atom(name.toByteArray(Charsets.UTF_8))
                         any(expr)
@@ -85,22 +88,20 @@ class Adapters {
                 }
             }
 
-            override fun fromSExpr(expr: SExpr): T = when (expr) {
-                is SAtom -> error("List required.")
-                is SList -> {
-                    val params = buildMap {
-                        expr.exprs.forEach { expr ->
-                            val list = expr.requireList().exprs
-                            require(2 == list.size) { "Malformed value entry." }
-                            val name = list[0].requireAtom().string()
-                            val param = paramsByName[name] ?: error("Unknown param $name")
-                            val adapter = adaptersByName[name] ?: error("Unknown param $name")
-                            val s = (adapter.javaClass.methods.find { it.name == "fromSExpr" }!!)(adapter, list[1])
-                            put(param, s)
-                        }
+            override fun fromSExpr(expr: SExpr): T = expr.requireList().run {
+                    ctor.callBy(buildMap<KParameter, Any> {
+                    exprs.forEach { expr ->
+                        val list = expr.requireList().exprs
+                        require(2 == list.size) { "Malformed value entry: ${list.size}" }
+                        val name = list[0].requireAtom().string()
+                        val param = paramsByName[name] ?: error("Unknown param $name")
+                        val adapter = adaptersByName[name] ?: error("Unknown param $name")
+                        val fn = adapter.javaClass.methods.find { it.name == "fromSExpr" }
+                            ?: error("Internal error: missing fromSExpr")
+                        val s = fn(adapter, list[1])
+                        put(param, s)
                     }
-                    ctor.callBy(params)
-                }
+                })
             }
         }
     }
