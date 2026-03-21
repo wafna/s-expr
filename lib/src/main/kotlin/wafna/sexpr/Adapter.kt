@@ -6,20 +6,19 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.typeOf
 
-internal interface Adapter<T> {
+/**
+ * Uses reflection to invoke its member in order to let the JVM sort out the types,
+ * which types we don't know.
+ */
+private interface Adapter<T> {
     fun toSExpr(obj: T): SExpr
     fun fromSExpr(expr: SExpr): T
-    fun invokeTo(obj: Any?): SExpr {
-        val fn = javaClass.methods.find { it.name == "toSExpr" }
-            ?: error("Internal error: missing toSExpr")
-        return fn(this, obj) as SExpr
-    }
 
-    fun invokeFrom(expr: SExpr): Any? {
-        val fn = javaClass.methods.find { it.name == "fromSExpr" }
-            ?: error("Internal error: missing fromSExpr")
-        return fn(this, expr)
-    }
+    fun invokeTo(obj: Any?): SExpr = (javaClass.methods.find { it.name == "toSExpr" }
+        ?: error("Internal error: missing toSExpr"))(this, obj) as SExpr
+
+    fun invokeFrom(expr: SExpr): Any? = (javaClass.methods.find { it.name == "fromSExpr" }
+        ?: error("Internal error: missing fromSExpr"))(this, expr)
 }
 
 /**
