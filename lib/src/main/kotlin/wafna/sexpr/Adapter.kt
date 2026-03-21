@@ -2,8 +2,10 @@ package wafna.sexpr
 
 import kotlin.reflect.KClass
 import kotlin.reflect.KParameter
+import kotlin.reflect.KType
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.typeOf
 
 interface Adapter<T> {
     fun toSExpr(obj: T): SExpr
@@ -57,9 +59,10 @@ class Adapters {
     }
 
     inline fun <reified T : Any> adapt(): Adapter<T> =
-        adapt(T::class)
+        adapt(typeOf<T>())
 
-    fun <T : Any> adapt(kClass: KClass<T>): Adapter<T> {
+    fun <T : Any> adapt(kType: KType): Adapter<T> {
+        @Suppress("UNCHECKED_CAST") val kClass = kType.classifier as KClass<T>
         require(kClass.isData) { "${kClass.qualifiedName} is not a data class" }
         val ctor = kClass.primaryConstructor ?: error("No primary constructor found for ${kClass.qualifiedName}")
         val adaptersByName = buildMap {
