@@ -95,6 +95,7 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
             }
 
             is SList -> {
+                doIndent()
                 stream.write(lbracket)
                 s.exprs.forEachIndexed { i, e ->
                     if (settings.dataFormat != DataFormat.Compact)
@@ -102,12 +103,7 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
                         else doIndent()
                     node(e, indent + 1)
                 }
-//                if (settings.dataFormat != DataFormat.Compact && null != settings.indent) {
-//                    stream.write(newLine)
-//                    repeat(indent) {
-//                        repeat(settings.indent!!) { stream.write(space) }
-//                    }
-//                }
+                doIndent()
                 stream.write(rbracket)
             }
         }
