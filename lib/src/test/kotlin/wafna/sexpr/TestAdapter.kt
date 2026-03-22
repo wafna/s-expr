@@ -3,7 +3,7 @@ package wafna.sexpr
 import kotlin.math.E
 import kotlin.math.PI
 import kotlin.test.Test
-import java.io.ByteArrayOutputStream
+import kotlin.test.assertEquals
 
 data class Thing1(
     val name: String,
@@ -22,21 +22,28 @@ class TestAdapter {
     fun thing1() {
         val adapters = Adapters()
         adapters.register<Thing1>()
-        val expr = adapters.toSExpr(Thing1("foo", 42, PI))
-        println(expr.write(ByteArrayOutputStream()).toString())
-        val thing = adapters.fromSExpr<Thing1>(expr)
-        println(thing)
+        val obj = Thing1("foo", 42, PI)
+        val expr = adapters.toSExpr(obj)
+        assertEquals(obj, adapters.fromSExpr<Thing1>(expr))
     }
     @Test
     fun thing2() {
         val adapters = Adapters()
         adapters.register<Thing2>()
-        val expr = adapters.toSExpr<Thing2>(Thing2(
+        val obj = Thing2(
             listOf("foo", "bar"),
-            listOf(1,2,3),
-            listOf(PI, E)))
-        println(expr.write(ByteArrayOutputStream()).toString())
-        val thing = adapters.fromSExpr<Thing2>(expr)
-        println(thing)
+            listOf(1, 2, 3),
+            listOf(PI, E)
+        )
+        val expr = adapters.toSExpr<Thing2>(obj)
+        assertEquals(obj, adapters.fromSExpr<Thing2>(expr))
+    }
+    @Test
+    fun lists() {
+        val adapters = Adapters()
+        val list = listOf(1, 2, 3)
+        val expr = adapters.toSExpr(list)
+        println(expr.writeToString())
+        assertEquals(list, adapters.fromSExpr<List<Int>>(expr))
     }
 }

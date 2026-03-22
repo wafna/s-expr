@@ -1,5 +1,6 @@
 package wafna.sexpr
 
+import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 
 enum class DataFormat {
@@ -110,4 +111,11 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
     }
     node(this, 0)
     return stream
+}
+
+fun SExpr.writeToString(settings: WriterSettings.() -> Unit = {}): String {
+    ByteArrayOutputStream().use {
+        write(it, settings)
+        return it.toByteArray().toString(Charsets.UTF_8)
+    }
 }
