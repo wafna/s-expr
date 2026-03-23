@@ -26,22 +26,22 @@ data class NestedObjects(
     val listsOfPrimitives: ListsOfPrimitives
 )
 
-class TestAdapter {
+class TestObjectifier {
     @Test
     fun primitives() {
-        Adapters().apply {
+        Objectifier().apply {
             register<PrimitivesOnly>()
         }.testObject(PrimitivesOnly("foo", 42, PI))
     }
     @Test
     fun listsOfPrimitives() {
-        Adapters().apply {
+        Objectifier().apply {
             register<ListsOfPrimitives>()
         }.testObject(listsOfPrimitives)
     }
     @Test
     fun listsOfListsOfPrimitives() {
-        Adapters().apply {
+        Objectifier().apply {
             register<ListOfListOfPrimitives>()
         }.testObject(
             ListOfListOfPrimitives(
@@ -54,11 +54,11 @@ class TestAdapter {
     }
     @Test
     fun bareList() {
-        Adapters().testObject(listOf(1, 2, 3))
+        Objectifier().testObject(listOf(1, 2, 3))
     }
     @Test
     fun nestedObjects() {
-        Adapters().apply {
+        Objectifier().apply {
             register<PrimitivesOnly>()
             register<ListsOfPrimitives>()
             register<NestedObjects>()
@@ -71,12 +71,12 @@ class TestAdapter {
     }
     @Test
     fun pair() {
-        Adapters().testObject(9 to 5)
-        Adapters().testObject("positions" to listOf(1, 2, 3))
+        Objectifier().testObject(9 to 5)
+        Objectifier().testObject("positions" to listOf(1, 2, 3))
     }
 
     companion object {
-        inline fun <reified T> Adapters.testObject(obj: T) {
+        inline fun <reified T> Objectifier.testObject(obj: T) {
             val expr = toSExpr(obj)
             assertEquals(obj, fromSExpr(expr))
         }
