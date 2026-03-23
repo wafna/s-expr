@@ -128,7 +128,7 @@ class Adapters {
 
     private fun listAdapter(kt: KType): Adapter<List<*>> = object : Adapter<List<*>> {
         override fun toSExpr(obj: List<*>): SExpr = toSList(kt, obj)
-        override fun fromSExpr(expr: SExpr): List<*> = fromSList(kt, expr)
+        override fun fromSExpr(expr: SExpr): List<*> = fromSList(kt, expr.requireList())
     }
 
     /**
@@ -159,7 +159,7 @@ class Adapters {
             @Suppress("UNCHECKED_CAST")
             adapter.invokeFrom(expr) as T
         } else if (kClass == List::class) {
-            fromSList<T>(kType, expr)
+            fromSList<T>(kType.arguments.first().type!!, expr.requireList())
         } else error("Required data class or list.")
     }
 
@@ -170,7 +170,7 @@ class Adapters {
         }
     }
 
-    private fun <T> fromSList(kType: KType, expr: SExpr): T {
+    private fun <T> fromSList(kType: KType, expr: SList): T {
         val adapter = adapter(kType)
         @Suppress("UNCHECKED_CAST")
         return buildList {
