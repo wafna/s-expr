@@ -5,63 +5,89 @@ import kotlin.math.PI
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-data class Thing1(
+data class PrimitivesOnly(
     val name: String,
     val count: Int,
     val value: Double
 )
 
-data class Thing2(
+data class ListsOfPrimitives(
     val names: List<String>,
     val counts: List<Int>,
     val values: List<Double>
 )
 
-data class Thing3(val groups: List<List<String>>)
+data class ListOfListOfPrimitives(
+    val groups: List<List<String>>
+)
+
+data class NestedObjects(
+    val primitivesOnly: PrimitivesOnly,
+    val listsOfPrimitives: ListsOfPrimitives
+)
 
 class TestAdapter {
     @Test
-    fun thing1() {
+    fun primitives() {
         val adapters = Adapters().apply {
-            register<Thing1>()
+            register<PrimitivesOnly>()
         }
-        val obj = Thing1("foo", 42, PI)
+        val obj = PrimitivesOnly("foo", 42, PI)
         val expr = adapters.toSExpr(obj)
-        assertEquals(obj, adapters.fromSExpr<Thing1>(expr))
+        assertEquals(obj, adapters.fromSExpr<PrimitivesOnly>(expr))
     }
     @Test
-    fun thing2() {
+    fun listsOfPrimitives() {
         val adapters = Adapters().apply {
-            register<Thing2>()
+            register<ListsOfPrimitives>()
         }
-        val obj = Thing2(
+        val obj = ListsOfPrimitives(
             listOf("foo", "bar"),
             listOf(1, 2, 3),
             listOf(PI, E)
         )
-        val expr = adapters.toSExpr<Thing2>(obj)
-        assertEquals(obj, adapters.fromSExpr<Thing2>(expr))
+        val expr = adapters.toSExpr<ListsOfPrimitives>(obj)
+        assertEquals(obj, adapters.fromSExpr<ListsOfPrimitives>(expr))
     }
     @Test
-    fun thing3() {
+    fun listsOfListsOfPrimitives() {
         val adapters = Adapters().apply {
-            register<Thing3>()
+            register<ListOfListOfPrimitives>()
         }
-        val obj = Thing3(
+        val obj = ListOfListOfPrimitives(
             listOf(
                 listOf("bing", "bang", "boom"),
                 listOf("herp", "derp"),
             )
         )
-        val expr = adapters.toSExpr<Thing3>(obj)
-        assertEquals(obj, adapters.fromSExpr<Thing3>(expr))
+        val expr = adapters.toSExpr<ListOfListOfPrimitives>(obj)
+        println(expr.writeToString())
+        assertEquals(obj, adapters.fromSExpr<ListOfListOfPrimitives>(expr))
     }
     @Test
-    fun lists() {
+    fun bareList() {
         val adapters = Adapters()
         val list = listOf(1, 2, 3)
         val expr = adapters.toSExpr(list)
-        println(expr.writeToString())
         assertEquals(list, adapters.fromSExpr<List<Int>>(expr))
+    }
+    @Test
+    fun nestedObjects() {
+        val adapters = Adapters().apply {
+            register<PrimitivesOnly>()
+            register<ListsOfPrimitives>()
+            register<NestedObjects>()
+        }
+        val obj = NestedObjects(
+            PrimitivesOnly("foo", 42, PI),
+            ListsOfPrimitives(
+                listOf("foo", "bar"),
+                listOf(1, 2, 3),
+                listOf(PI, E)
+            )
+        )
+        val expr = adapters.toSExpr<NestedObjects>(obj)
+        println(expr.writeToString())
+        assertEquals(obj, adapters.fromSExpr<NestedObjects>(expr))
     }
 }

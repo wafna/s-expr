@@ -99,12 +99,12 @@ class Adapters {
         adapters[kClass.java] = object : Adapter<T> {
             override fun toSExpr(obj: T): SExpr = buildSExpr {
                 adaptersByName.forEach { (name, adapter) ->
-                    val property = kClass.memberProperties.firstOrNull { it.name == name }
-                        ?: error("${kClass.qualifiedName} has no property with name '$name'")
-                    val value = property.get(obj)
-                    val expr = adapter.invokeTo(value)
                     list {
                         atom(name.toByteArray(Charsets.UTF_8))
+                        val property = kClass.memberProperties.firstOrNull { it.name == name }
+                            ?: error("${kClass.qualifiedName} has no property with name '$name'")
+                        val value = property.get(obj)
+                        val expr = adapter.invokeTo(value)
                         any(expr)
                     }
                 }
