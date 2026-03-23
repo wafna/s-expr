@@ -72,13 +72,17 @@ class TestObjectifier {
             .testObject(List(4) { PrimitivesOnly("foo", 42, PI) })
     }
     @Test
+    fun set() {
+        Objectifier().testObject(setOf(1, 2, 3))
+    }
+    @Test
     fun pair() {
         Objectifier().testObject(9 to 5)
         Objectifier().testObject("positions" to listOf(1, 2, 3))
     }
     @Test
-    fun set() {
-        Objectifier().testObject(setOf(1, 2, 3))
+    fun map() {
+        Objectifier().testObject(mapOf(1 to 2, 3 to 4))
     }
 
     companion object {

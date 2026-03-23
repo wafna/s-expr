@@ -23,7 +23,7 @@ private interface Adapter<T> {
 /**
  * A collection of adapters for translating objects to and from s-expressions.
  * Create an instance, register data classes, invoke toSExpr and fromSExpr.
- * Primitives, (registered) data classes, pairs, and lists thereof are handled.
+ * Primitives, (registered) data classes, pairs, maps, sets, and lists thereof are handled.
  */
 class Objectifier {
     private val adapters = mutableMapOf<Class<*>, Adapter<*>>().apply {
@@ -65,7 +65,7 @@ class Objectifier {
     private fun adapter(kType: KType): Adapter<*> {
         val kClass = kType.classifier as KClass<*>
         return adapters[kClass.java] ?: when (kClass) {
-            kList -> {
+            List::class -> {
                 val itemType = kType.arguments.first().type!!
                 object : Adapter<List<*>> {
                     override fun toSExpr(obj: List<*>): SExpr = fromList(itemType, obj)
@@ -73,7 +73,7 @@ class Objectifier {
                 }
             }
 
-            kSet -> {
+            Set::class -> {
                 val itemType = kType.arguments.first().type!!
                 object : Adapter<Set<*>> {
                     override fun toSExpr(obj: Set<*>): SExpr = fromSet(itemType, obj)
@@ -81,12 +81,21 @@ class Objectifier {
                 }
             }
 
-            kPair -> {
+            Pair::class -> {
                 val type1 = kType.arguments[0].type!!
                 val type2 = kType.arguments[1].type!!
                 object : Adapter<Pair<*, *>> {
                     override fun toSExpr(obj: Pair<*, *>): SExpr = fromPair(type1, type2, obj)
                     override fun fromSExpr(expr: SExpr): Pair<*, *> = toPair(type1, type2, expr.requireList())
+                }
+            }
+
+            Map::class -> {
+                val type1 = kType.arguments[0].type!!
+                val type2 = kType.arguments[1].type!!
+                object : Adapter<Map<*, *>> {
+                    override fun toSExpr(obj: Map<*, *>): SExpr = fromMap(type1, type2, obj)
+                    override fun fromSExpr(expr: SExpr): Map<*, *> = toMap(type1, type2, expr.requireList())
                 }
             }
 
@@ -151,7 +160,6 @@ class Objectifier {
     @PublishedApi
     internal fun <T> toSExpr(kType: KType, obj: T): SExpr = adapter(kType).invokeTo(obj)
 
-
     /**
      * Create an object from an s-expression.
      */
@@ -205,10 +213,29 @@ class Objectifier {
         return Pair(p, q) as T
     }
 
+    private fun fromMap(type1: KType, type2: KType, obj: Map<*, *>): SList = buildSExpr {
+        obj.forEach {
+            list {
+                any(adapter(type1).invokeTo(it.key))
+                any(adapter(type2).invokeTo(it.value))
+            }
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> toMap(type1: KType, type2: KType, expr: SList): T = buildMap {
+        val a1 = adapter(type1)
+        val a2 = adapter(type2)
+        expr.exprs.forEach {
+            val e = it.requireList().exprs
+            val p = a1.invokeFrom(e[0])
+            val q = a2.invokeFrom(e[1])
+            @Suppress("UNCHECKED_CAST")
+            put(p, q)
+        }
+    } as T
+
     companion object {
-        private val kList = List::class
-        private val kSet = Set::class
-        private val kPair = Pair::class
 
         private fun SExpr.requireList(msg: String = "Expected list."): SList = when (this) {
             is SAtom -> error(msg)
