@@ -17,19 +17,23 @@ data class Thing2(
     val values: List<Double>
 )
 
+data class Thing3(val groups: List<List<String>>)
+
 class TestAdapter {
     @Test
     fun thing1() {
-        val adapters = Adapters()
-        adapters.register<Thing1>()
+        val adapters = Adapters().apply {
+            register<Thing1>()
+        }
         val obj = Thing1("foo", 42, PI)
         val expr = adapters.toSExpr(obj)
         assertEquals(obj, adapters.fromSExpr<Thing1>(expr))
     }
     @Test
     fun thing2() {
-        val adapters = Adapters()
-        adapters.register<Thing2>()
+        val adapters = Adapters().apply {
+            register<Thing2>()
+        }
         val obj = Thing2(
             listOf("foo", "bar"),
             listOf(1, 2, 3),
@@ -37,6 +41,20 @@ class TestAdapter {
         )
         val expr = adapters.toSExpr<Thing2>(obj)
         assertEquals(obj, adapters.fromSExpr<Thing2>(expr))
+    }
+    @Test
+    fun thing3() {
+        val adapters = Adapters().apply {
+            register<Thing3>()
+        }
+        val obj = Thing3(
+            listOf(
+                listOf("bing", "bang", "boom"),
+                listOf("herp", "derp"),
+            )
+        )
+        val expr = adapters.toSExpr<Thing3>(obj)
+        assertEquals(obj, adapters.fromSExpr<Thing3>(expr))
     }
     @Test
     fun lists() {

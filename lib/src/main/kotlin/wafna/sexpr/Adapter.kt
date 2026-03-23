@@ -55,6 +55,13 @@ class Adapters {
         })
     }
 
+    private fun adapter(kType: KType): Adapter<*> {
+        val kClass = kType.classifier as KClass<*>
+        return if (kClass == List::class) {
+            listAdapter(kType)
+        } else adapters[kClass.java] ?: error("No adapter for type $kClass")
+    }
+
     /**
      * Create an adapter for a data class.
      * This class may now appear in supported collections.
@@ -72,13 +79,9 @@ class Adapters {
                 require(!param.isVararg) { "Varargs not supported." }
                 val klass = param.type.classifier as KClass<*>
                 if (klass == List::class) {
-                    put(param.name!!, object : Adapter<Any?> {
-                        override fun toSExpr(obj: Any?): SExpr = toSList(param.type, obj)
-                        override fun fromSExpr(expr: SExpr): Any? = fromSList(param.type, expr)
-                    })
+                    put(param.name!!, listAdapter(param.type))
                 } else {
-                    val adapter = adapters[klass.java]
-                        ?: error("No adapter found for ${klass.qualifiedName} on param ${param.name}.")
+                    val adapter = adapter(param.type)
                     put(param.name!!, adapter)
                 }
             }
@@ -115,6 +118,11 @@ class Adapters {
         }
     }
 
+    private fun listAdapter(kt: KType): Adapter<Any?> = object : Adapter<Any?> {
+        override fun toSExpr(obj: Any?): SExpr = toSList(kt, obj)
+        override fun fromSExpr(expr: SExpr): Any? = fromSList(kt, expr)
+    }
+
     /**
      * Render an object as an s-expression.
      */
@@ -124,7 +132,7 @@ class Adapters {
     internal fun <T> toSExpr(kType: KType, obj: T): SExpr {
         val kClass = kType.classifier as KClass<*>
         return if (kClass.isData) {
-            val adapter = adapters[kClass.java] ?: error("No adapter found for ${kClass.qualifiedName}")
+            val adapter = adapter(kType)
             adapter.invokeTo(obj)
         } else if (kClass == List::class) {
             toSList(kType, obj)
@@ -140,7 +148,7 @@ class Adapters {
     internal fun <T> fromSExpr(kType: KType, expr: SExpr): T {
         val kClass = kType.classifier as KClass<*>
         return if (kClass.isData) {
-            val adapter = adapters[kClass.java] ?: error("No adapter found for ${kClass.qualifiedName}")
+            val adapter = adapter(kType)
             @Suppress("UNCHECKED_CAST")
             adapter.invokeFrom(expr) as T
         } else if (kClass == List::class) {
@@ -149,8 +157,7 @@ class Adapters {
     }
 
     private fun <T> toSList(kType: KType, obj: T): SList {
-        val kt = kType.arguments.first().type!!.classifier as KClass<*>
-        val adapter = adapters[kt.java] ?: error("No adapter found for ${kt.java} in List")
+        val adapter = adapter(kType)
         return buildSExpr {
             (obj as List<*>).forEach {
                 any(adapter.invokeTo(it))
@@ -159,8 +166,7 @@ class Adapters {
     }
 
     private fun <T> fromSList(kType: KType, expr: SExpr): T {
-        val kt = kType.arguments.first().type!!.classifier as KClass<*>
-        val adapter = adapters[kt.java] ?: error("No adapter found for ${kt.java} in List")
+        val adapter = adapter(kType)
         @Suppress("UNCHECKED_CAST")
         return buildList {
             expr.requireList().exprs.forEach { add(adapter.invokeFrom(it)) }
