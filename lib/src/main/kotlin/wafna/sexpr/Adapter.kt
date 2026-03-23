@@ -65,9 +65,13 @@ class Adapters {
 
     private fun adapter(kType: KType): Adapter<*> {
         val kClass = kType.classifier as KClass<*>
-        return if (kClass == List::class) {
-            listAdapter(kType.arguments.first().type!!)
-        } else adapters[kClass.java] ?: error("No adapter for type $kClass")
+        return adapters[kClass.java] ?: Unit.let {
+            when (kClass) {
+                kList -> listAdapter(kType.arguments.first().type!!)
+                kPair -> pairAdapter(kType)
+                else -> error("Unsupported adapter type $kClass")
+            }
+        }
     }
 
     /**
@@ -82,16 +86,10 @@ class Adapters {
         val kClass = kType.classifier as KClass<T>
         require(kClass.isData) { "${kClass.qualifiedName} is not a data class" }
         val ctor = kClass.primaryConstructor ?: error("No primary constructor found for ${kClass.qualifiedName}")
-        val adaptersByName = buildMap {
+        val adaptersByName: Map<String, Adapter<*>> = buildMap {
             ctor.parameters.forEach { param ->
                 require(!param.isVararg) { "Varargs not supported." }
-                val klass = param.type.classifier as KClass<*>
-                if (klass == List::class) {
-                    put(param.name!!, listAdapter(param.type.arguments.first().type!!))
-                } else {
-                    val adapter = adapter(param.type)
-                    put(param.name!!, adapter)
-                }
+                put(param.name!!, adapter(param.type))
             }
         }
 
@@ -100,7 +98,7 @@ class Adapters {
             override fun toSExpr(obj: T): SExpr = buildSExpr {
                 adaptersByName.forEach { (name, adapter) ->
                     list {
-                        atom(name.toByteArray(Charsets.UTF_8))
+                        atom(name!!.toByteArray(Charsets.UTF_8))
                         val property = kClass.memberProperties.firstOrNull { it.name == name }
                             ?: error("${kClass.qualifiedName} has no property with name '$name'")
                         val value = property.get(obj)
@@ -126,9 +124,18 @@ class Adapters {
         }
     }
 
-    private fun listAdapter(kt: KType): Adapter<List<*>> = object : Adapter<List<*>> {
-        override fun toSExpr(obj: List<*>): SExpr = toSList(kt, obj)
-        override fun fromSExpr(expr: SExpr): List<*> = fromSList(kt, expr.requireList())
+    private fun listAdapter(itemType: KType): Adapter<List<*>> = object : Adapter<List<*>> {
+        override fun toSExpr(obj: List<*>): SExpr = fromList(itemType, obj)
+        override fun fromSExpr(expr: SExpr): List<*> = toList(itemType, expr.requireList())
+    }
+
+    private fun pairAdapter(pairType: KType): Adapter<Pair<*, *>> {
+        val type1 = pairType.arguments[0].type!!
+        val type2 = pairType.arguments[1].type!!
+        return object : Adapter<Pair<*, *>> {
+            override fun toSExpr(obj: Pair<*, *>): SExpr = fromPair(type1, type2, obj)
+            override fun fromSExpr(expr: SExpr): Pair<*, *> = toPair(type1, type2, expr.requireList())
+        }
     }
 
     /**
@@ -141,8 +148,8 @@ class Adapters {
         val kClass = kType.classifier as KClass<*>
         return if (kClass.isData) {
             adapter(kType).invokeTo(obj)
-        } else if (kClass == List::class) {
-            toSList(kType.arguments.first().type!!, obj as List<*>)
+        } else if (kClass == kList) {
+            fromList(kType.arguments.first().type!!, obj as List<*>)
         } else error("Required data class or list.")
     }
 
@@ -158,24 +165,41 @@ class Adapters {
             val adapter = adapter(kType)
             @Suppress("UNCHECKED_CAST")
             adapter.invokeFrom(expr) as T
-        } else if (kClass == List::class) {
-            fromSList<T>(kType.arguments.first().type!!, expr.requireList())
+        } else if (kClass == kList) {
+            toList<T>(kType.arguments.first().type!!, expr.requireList())
         } else error("Required data class or list.")
     }
 
-    private fun toSList(itemType: KType, obj: List<*>): SList {
+    private fun fromList(itemType: KType, obj: List<*>): SList {
         val adapter = adapter(itemType)
         return buildSExpr {
             obj.forEach { any(adapter.invokeTo(it)) }
         }
     }
 
-    private fun <T> fromSList(kType: KType, expr: SList): T {
+    private fun <T> toList(kType: KType, expr: SList): T {
         val adapter = adapter(kType)
         @Suppress("UNCHECKED_CAST")
         return buildList {
             expr.requireList().exprs.forEach { add(adapter.invokeFrom(it)) }
         } as T
+    }
+
+    private fun fromPair(type1: KType, type2: KType, obj: Pair<*, *>): SList = buildSExpr {
+        any(adapter(type1).invokeTo(obj.first))
+        any(adapter(type2).invokeTo(obj.second))
+    }
+
+    private fun <T> toPair(type1: KType, type2: KType, expr: SList): T {
+        val p = adapter(type1).invokeFrom(expr.exprs[0])
+        val q = adapter(type1).invokeFrom(expr.exprs[1])
+        @Suppress("UNCHECKED_CAST")
+        return (p to q) as T
+    }
+
+    companion object {
+        private val kList = List::class
+        private val kPair = Pair::class
     }
 }
 

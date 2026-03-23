@@ -87,7 +87,14 @@ class TestAdapter {
             )
         )
         val expr = adapters.toSExpr<NestedObjects>(obj)
-        println(expr.writeToString())
         assertEquals(obj, adapters.fromSExpr<NestedObjects>(expr))
+    }
+    @Test
+    fun pair() {
+        val adapters = Adapters()
+        val obj = 9 to 5
+        val expr = adapters.toSExpr(obj)
+        println(expr.writeToString())
+        assertEquals(obj, adapters.fromSExpr<Pair<Int, Int>>(expr))
     }
 }
