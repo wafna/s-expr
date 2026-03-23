@@ -2,7 +2,6 @@ package wafna.sexpr
 
 import kotlin.math.E
 import kotlin.math.PI
-import kotlin.reflect.typeOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
