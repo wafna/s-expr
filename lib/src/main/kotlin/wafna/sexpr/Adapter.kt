@@ -7,7 +7,7 @@ import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.typeOf
 
 /**
- * Uses reflection to invoke its member in order to let the JVM sort out the types,
+ * Uses reflection to invoke its members in order to let the JVM sort out the types,
  * which types we don't know.
  */
 private interface Adapter<T> {
