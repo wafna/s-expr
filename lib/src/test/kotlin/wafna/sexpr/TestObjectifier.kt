@@ -53,10 +53,6 @@ class TestObjectifier {
         )
     }
     @Test
-    fun bareList() {
-        Objectifier().testObject(listOf(1, 2, 3))
-    }
-    @Test
     fun nestedObjects() {
         Objectifier().apply {
             register<PrimitivesOnly>()
@@ -70,9 +66,19 @@ class TestObjectifier {
         )
     }
     @Test
+    fun list() {
+        Objectifier().testObject(listOf(1, 2, 3))
+        Objectifier().apply { register<PrimitivesOnly>() }
+            .testObject(List(4) { PrimitivesOnly("foo", 42, PI) })
+    }
+    @Test
     fun pair() {
         Objectifier().testObject(9 to 5)
         Objectifier().testObject("positions" to listOf(1, 2, 3))
+    }
+    @Test
+    fun set() {
+        Objectifier().testObject(setOf(1, 2, 3))
     }
 
     companion object {

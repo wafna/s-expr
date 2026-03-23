@@ -73,6 +73,14 @@ class Objectifier {
                 }
             }
 
+            kSet -> {
+                val itemType = kType.arguments.first().type!!
+                object : Adapter<Set<*>> {
+                    override fun toSExpr(obj: Set<*>): SExpr = fromSet(itemType, obj)
+                    override fun fromSExpr(expr: SExpr): Set<*> = toSet(itemType, expr.requireList())
+                }
+            }
+
             kPair -> {
                 val type1 = kType.arguments[0].type!!
                 val type2 = kType.arguments[1].type!!
@@ -141,26 +149,17 @@ class Objectifier {
     inline fun <reified T> toSExpr(obj: T): SExpr = toSExpr(typeOf<T>(), obj)
 
     @PublishedApi
-    internal fun <T> toSExpr(kType: KType, obj: T): SExpr {
-        val kClass = kType.classifier as KClass<*>
-        return if (kClass.isData) {
-            adapter(kType).invokeTo(obj)
-        } else when (kClass) {
-            kList -> fromList(kType.arguments.first().type!!, obj as List<*>)
-            kPair -> fromPair(kType.arguments[0].type!!, kType.arguments[1].type!!, obj as Pair<*, *>)
-            else -> error("Unsupported adapter type $kClass")
-        }
-    }
+    internal fun <T> toSExpr(kType: KType, obj: T): SExpr = adapter(kType).invokeTo(obj)
+
 
     /**
      * Create an object from an s-expression.
      */
     inline fun <reified T> fromSExpr(expr: SExpr): T = fromSExpr(typeOf<T>(), expr)
 
-    @Suppress("UNCHECKED_CAST")
     @PublishedApi
-    internal fun <T> fromSExpr(kType: KType, expr: SExpr): T =
-        adapter(kType).invokeFrom(expr) as T
+    @Suppress("UNCHECKED_CAST")
+    internal fun <T> fromSExpr(kType: KType, expr: SExpr): T = adapter(kType).invokeFrom(expr) as T
 
     // Collection handlers.
 
@@ -179,6 +178,21 @@ class Objectifier {
         } as T
     }
 
+    private fun fromSet(itemType: KType, obj: Set<*>): SList {
+        val adapter = adapter(itemType)
+        return buildSExpr {
+            obj.forEach { any(adapter.invokeTo(it)) }
+        }
+    }
+
+    private fun <T> toSet(itemType: KType, expr: SList): T {
+        val adapter = adapter(itemType)
+        @Suppress("UNCHECKED_CAST")
+        return buildSet {
+            expr.requireList().exprs.forEach { add(adapter.invokeFrom(it)) }
+        } as T
+    }
+
     private fun fromPair(type1: KType, type2: KType, obj: Pair<*, *>): SList = buildSExpr {
         any(adapter(type1).invokeTo(obj.first))
         any(adapter(type2).invokeTo(obj.second))
@@ -193,6 +207,7 @@ class Objectifier {
 
     companion object {
         private val kList = List::class
+        private val kSet = Set::class
         private val kPair = Pair::class
 
         private fun SExpr.requireList(msg: String = "Expected list."): SList = when (this) {
