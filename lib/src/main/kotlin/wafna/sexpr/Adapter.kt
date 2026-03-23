@@ -29,6 +29,14 @@ private interface Adapter<T> {
 class Adapters {
     private val adapters = mutableMapOf<Class<*>, Adapter<*>>().apply {
         // Add all the primitive adapters.
+        put(Byte::class.java, object : Adapter<Byte> {
+            override fun toSExpr(obj: Byte): SExpr = SAtom(ByteArray(1).also { it[0] = obj })
+            override fun fromSExpr(expr: SExpr): Byte = expr.requireAtom().data[0]
+        })
+        put(Char::class.java, object : Adapter<Char> {
+            override fun toSExpr(obj: Char): SExpr = SAtom(ByteArray(1).also { it[0] = obj.code.toByte() })
+            override fun fromSExpr(expr: SExpr): Char = expr.requireAtom().data[0].toInt().toChar()
+        })
         put(String::class.java, object : Adapter<String> {
             override fun toSExpr(obj: String): SExpr = SAtom(obj.toByteArray())
             override fun fromSExpr(expr: SExpr): String = expr.requireAtom().string()
@@ -58,7 +66,7 @@ class Adapters {
     private fun adapter(kType: KType): Adapter<*> {
         val kClass = kType.classifier as KClass<*>
         return if (kClass == List::class) {
-            listAdapter(kType)
+            listAdapter(kType.arguments.first().type!!)
         } else adapters[kClass.java] ?: error("No adapter for type $kClass")
     }
 
@@ -79,7 +87,7 @@ class Adapters {
                 require(!param.isVararg) { "Varargs not supported." }
                 val klass = param.type.classifier as KClass<*>
                 if (klass == List::class) {
-                    put(param.name!!, listAdapter(param.type))
+                    put(param.name!!, listAdapter(param.type.arguments.first().type!!))
                 } else {
                     val adapter = adapter(param.type)
                     put(param.name!!, adapter)
@@ -118,9 +126,9 @@ class Adapters {
         }
     }
 
-    private fun listAdapter(kt: KType): Adapter<Any?> = object : Adapter<Any?> {
-        override fun toSExpr(obj: Any?): SExpr = toSList(kt, obj)
-        override fun fromSExpr(expr: SExpr): Any? = fromSList(kt, expr)
+    private fun listAdapter(kt: KType): Adapter<List<*>> = object : Adapter<List<*>> {
+        override fun toSExpr(obj: List<*>): SExpr = toSList(kt, obj)
+        override fun fromSExpr(expr: SExpr): List<*> = fromSList(kt, expr)
     }
 
     /**
@@ -132,10 +140,9 @@ class Adapters {
     internal fun <T> toSExpr(kType: KType, obj: T): SExpr {
         val kClass = kType.classifier as KClass<*>
         return if (kClass.isData) {
-            val adapter = adapter(kType)
-            adapter.invokeTo(obj)
+            adapter(kType).invokeTo(obj)
         } else if (kClass == List::class) {
-            toSList(kType, obj)
+            toSList(kType.arguments.first().type!!, obj as List<*>)
         } else error("Required data class or list.")
     }
 
@@ -156,12 +163,10 @@ class Adapters {
         } else error("Required data class or list.")
     }
 
-    private fun <T> toSList(kType: KType, obj: T): SList {
-        val adapter = adapter(kType)
+    private fun toSList(itemType: KType, obj: List<*>): SList {
+        val adapter = adapter(itemType)
         return buildSExpr {
-            (obj as List<*>).forEach {
-                any(adapter.invokeTo(it))
-            }
+            obj.forEach { any(adapter.invokeTo(it)) }
         }
     }
 
