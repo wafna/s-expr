@@ -18,7 +18,7 @@ class SExprBuilder {
         exprs.push(SAtom(string.toByteArray()))
     }
 
-    fun empty(){
+    fun empty() {
         exprs.push(NULL)
     }
 
@@ -33,6 +33,7 @@ class SExprBuilder {
     }
 
     internal fun result(): SList = SList(exprs.take(exprs.size))
+
     companion object {
         val NULL = SAtom(ByteArray(0))
     }
