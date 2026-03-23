@@ -148,9 +148,11 @@ class Adapters {
         val kClass = kType.classifier as KClass<*>
         return if (kClass.isData) {
             adapter(kType).invokeTo(obj)
-        } else if (kClass == kList) {
-            fromList(kType.arguments.first().type!!, obj as List<*>)
-        } else error("Required data class or list.")
+        } else when (kClass) {
+            kList -> fromList(kType.arguments.first().type!!, obj as List<*>)
+            kPair -> fromPair(kType.arguments[0].type!!, kType.arguments[1].type!!, obj as Pair<*, *>)
+            else -> error("Unsupported adapter type $kClass")
+        }
     }
 
     /**
@@ -158,17 +160,10 @@ class Adapters {
      */
     inline fun <reified T> fromSExpr(expr: SExpr): T = fromSExpr(typeOf<T>(), expr)
 
+    @Suppress("UNCHECKED_CAST")
     @PublishedApi
-    internal fun <T> fromSExpr(kType: KType, expr: SExpr): T {
-        val kClass = kType.classifier as KClass<*>
-        return if (kClass.isData) {
-            val adapter = adapter(kType)
-            @Suppress("UNCHECKED_CAST")
-            adapter.invokeFrom(expr) as T
-        } else if (kClass == kList) {
-            toList<T>(kType.arguments.first().type!!, expr.requireList())
-        } else error("Required data class or list.")
-    }
+    internal fun <T> fromSExpr(kType: KType, expr: SExpr): T =
+        adapter(kType).invokeFrom(expr) as T
 
     private fun fromList(itemType: KType, obj: List<*>): SList {
         val adapter = adapter(itemType)
@@ -192,7 +187,7 @@ class Adapters {
 
     private fun <T> toPair(type1: KType, type2: KType, expr: SList): T {
         val p = adapter(type1).invokeFrom(expr.exprs[0])
-        val q = adapter(type1).invokeFrom(expr.exprs[1])
+        val q = adapter(type2).invokeFrom(expr.exprs[1])
         @Suppress("UNCHECKED_CAST")
         return (p to q) as T
     }
