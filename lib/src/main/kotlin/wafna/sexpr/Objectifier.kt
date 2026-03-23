@@ -104,7 +104,6 @@ class Objectifier {
                 put(param.name!!, adapter(param.type))
             }
         }
-
         val paramsByName = ctor.parameters.associateBy { it.name }
         adapters[kClass.java] = object : Adapter<T> {
             override fun toSExpr(obj: T): SExpr = buildSExpr {
@@ -162,6 +161,8 @@ class Objectifier {
     @PublishedApi
     internal fun <T> fromSExpr(kType: KType, expr: SExpr): T =
         adapter(kType).invokeFrom(expr) as T
+
+    // Collection handlers.
 
     private fun fromList(itemType: KType, obj: List<*>): SList {
         val adapter = adapter(itemType)
