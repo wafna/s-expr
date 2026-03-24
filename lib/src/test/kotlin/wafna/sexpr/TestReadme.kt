@@ -19,12 +19,12 @@ class TestReadme {
         val expr = serdes.toSExpr(thing)
         // Note that converting strings to and from s-expressions and converting objects to and from s-expressions
         // are distinctly separate.
-        println(expr.canonicalize())
+        println(expr.showSExpr())
         // Recreate the object from the s-expression.
         val actualFromExpr = serdes.fromSExpr<Thing>(expr)
         require(thing == actualFromExpr)
         // Recreate the object from the parsed, canonicalized s-expression.
-        val actualFromString = serdes.fromSExpr<Thing>(readSExpr(CharStream.from(expr.canonicalize())))
+        val actualFromString = serdes.fromSExpr<Thing>(readSExpr(CharStream.from(expr.showSExpr())))
         require(thing == actualFromString)
     }
 }

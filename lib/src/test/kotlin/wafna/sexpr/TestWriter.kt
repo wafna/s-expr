@@ -29,6 +29,6 @@ class TestWriter {
     @Test
     fun testShow() {
         val s = buildSExpr { atom("a"); atom("b") }
-        assertEquals("[1:a1:b]", s.canonicalize())
+        assertEquals("[1:a1:b]", s.showSExpr())
     }
 }

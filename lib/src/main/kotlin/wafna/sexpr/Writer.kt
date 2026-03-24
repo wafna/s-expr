@@ -116,7 +116,7 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
 /**
  * The canonical representation is RLE for all atoms and no whitespace.
  */
-fun SExpr.canonicalize(settings: WriterSettings.() -> Unit = {}): String {
+fun SExpr.showSExpr(settings: WriterSettings.() -> Unit = {}): String {
     ByteArrayOutputStream().use {
         write(it, settings)
         return it.toByteArray().toString(Charsets.UTF_8)
