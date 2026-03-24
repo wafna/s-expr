@@ -48,37 +48,37 @@ class SerdeRegistry internal constructor(val serdes: Serdes) {
  */
 class Serdes private constructor() {
 
-    private val adapters = mutableMapOf<Class<*>, Adapter<*>>(
+    private val adapters = mutableMapOf<KClass<*>, Adapter<*>>(
         // Primitive adapters.
         // Collection types are built on the fly, below.
-        Byte::class.java to object : Adapter<Byte>() {
+        Byte::class to object : Adapter<Byte>() {
             override fun implTo(obj: Byte): SExpr = SAtom(ByteArray(1).also { it[0] = obj })
             override fun implFrom(expr: SExpr): Byte = expr.requireAtom().data[0]
         },
-        Char::class.java to object : Adapter<Char>() {
+        Char::class to object : Adapter<Char>() {
             override fun implTo(obj: Char): SExpr = SAtom(ByteArray(1).also { it[0] = obj.code.toByte() })
             override fun implFrom(expr: SExpr): Char = expr.requireAtom().data[0].toInt().toChar()
         },
-        String::class.java to object : Adapter<String>() {
+        String::class to object : Adapter<String>() {
             override fun implTo(obj: String): SExpr = SAtom(obj.toByteArray())
             override fun implFrom(expr: SExpr): String = expr.requireAtom().asString()
         },
-        Boolean::class.java to object : Adapter<Boolean>() {
+        Boolean::class to object : Adapter<Boolean>() {
             override fun implTo(obj: Boolean): SExpr = SAtom(obj.toString().toByteArray())
             override fun implFrom(expr: SExpr): Boolean =
                 expr.requireAtom().asString().run { toBooleanStrictOrNull() ?: error("Expected Boolean, got $this.") }
         },
-        Int::class.java to object : Adapter<Int>() {
+        Int::class to object : Adapter<Int>() {
             override fun implTo(obj: Int): SExpr = SAtom(obj.toString().toByteArray())
             override fun implFrom(expr: SExpr): Int =
                 expr.requireAtom().asString().run { toIntOrNull() ?: error("Expected Int, got $this.") }
         },
-        Long::class.java to object : Adapter<Long>() {
+        Long::class to object : Adapter<Long>() {
             override fun implTo(obj: Long): SExpr = SAtom(obj.toString().toByteArray())
             override fun implFrom(expr: SExpr): Long =
                 expr.requireAtom().asString().run { toLongOrNull() ?: error("Expected Long, got $this") }
         },
-        Double::class.java to object : Adapter<Double>() {
+        Double::class to object : Adapter<Double>() {
             override fun implTo(obj: Double): SExpr = SAtom(obj.toString().toByteArray())
             override fun implFrom(expr: SExpr): Double =
                 expr.requireAtom().asString().run { toDoubleOrNull() ?: error("Expected Double, got $this") }
@@ -89,7 +89,7 @@ class Serdes private constructor() {
     // This includes building adapters for parameterized types using their (reified) type arguments.
     private fun adapterFor(kType: KType): Adapter<*> {
         val kClass = kType.classifier as KClass<*>
-        return adapters[kClass.java] ?: when (kClass) {
+        return adapters[kClass] ?: when (kClass) {
             List::class -> {
                 val itemType = kType.arguments.first().type!!
                 object : Adapter<List<*>>() {
@@ -124,7 +124,7 @@ class Serdes private constructor() {
                 }
             }
 
-            else -> error("Unsupported adapter type $kClass")
+            else -> error("Unsupported adapter type ${kClass}${adapters.toList().joinToString { "\n\t${it.first}" }}")
         }
     }
 
@@ -141,7 +141,7 @@ class Serdes private constructor() {
             }
         }
         val paramsByName = ctor.parameters.associateBy { it.name }
-        adapters[kClass.java] = object : Adapter<T>() {
+        adapters[kClass] = object : Adapter<T>() {
             override fun implTo(obj: T): SExpr = buildSExpr {
                 adaptersByName.forEach { (name, adapter) ->
                     list {
