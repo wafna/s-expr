@@ -39,10 +39,12 @@ private abstract class Adapter<T> : Mapper<T> {
  */
 class MapperRegistry internal constructor(val mappers: Mappers) {
     /**
-     * Create an adapter for a data class.
-     * This data class may now appear in supported collections and as members in other data classes.
+     * Create a mapper for a data class.
      */
     inline fun <reified T : Any> register() = mappers.register<T>(typeOf<T>())
+    /**
+     * Register a custom mapper for a type T.
+     */
     inline fun <reified T: Any> register(mapper: Mapper<T>) = mappers.adapt(typeOf<T>(), mapper)
 }
 
