@@ -47,6 +47,6 @@ buildSExpr {
 }
 ```
 
-* Writer.
+* Parser and Writer.
 
-Turn s-expressions into streams of bytes.
+Turn s-expressions into streams of bytes and back again.
