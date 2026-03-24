@@ -18,7 +18,7 @@ This package includes:
 * Reader and Writer.
 
 Turn s-expressions into streams of bytes and back again.
-Features both "SAX" and "DOM" styles of parsing.
+Features both event ("SAX") and document ("DOM") styles of parsing.
 
 * Object mapping.
 
