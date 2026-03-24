@@ -24,9 +24,11 @@ Serialize data classes and collections using s-expressions.
 
 **Primitives**: Byte, Int, Double, String, Char, Boolean
 
-**Collections**: List, Set, Pair, Map 
+**Collections**: List, Set, Pair, Map
 
-Single level hierarchies of data classes in sealed classes or interfaces.
+**Sealed data hierarchies**
+
+**Enums**
 
 ```kotlin
 data class Thing(val id: Int, val name: String)

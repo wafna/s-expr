@@ -41,6 +41,10 @@ sealed interface Sealed {
 
 data class SealedContainer(val sealed: Sealed)
 
+enum class Enum {
+    Bing, Bang, Boom
+}
+
 class TestSerdes {
     @Test
     fun primitives() {
@@ -124,6 +128,15 @@ class TestSerdes {
             .testObject(SealedContainer(Sealed.Sealed1(42)))
             .testObject(SealedContainer(Sealed.Sealed2("42")))
             .testObject(SealedContainer(Sealed.Sealed3(42.0)))
+    }
+    @Test
+    fun enums() {
+        Serdes {
+            register<Enum>()
+        }.apply {
+//            Enum.entries.forEach { testObject(it) }
+            testObject(Enum.Boom)
+        }
     }
 
     companion object {

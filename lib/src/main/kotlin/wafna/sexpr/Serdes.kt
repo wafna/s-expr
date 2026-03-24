@@ -2,6 +2,7 @@ package wafna.sexpr
 
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
+import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.typeOf
@@ -166,6 +167,19 @@ class Serdes private constructor() {
                     @Suppress("UNCHECKED_CAST")
                     return adapter.fromSExpr(items[1].requireList()) as T
                 }
+            }
+        } else if (kClass.isSubclassOf(Enum::class)) {
+            val byName = buildMap {
+                kClass.java.enumConstants.forEach {
+                    put(it.toString(), it)
+                }
+            }
+            adapters[kClass] = object : Adapter<T>() {
+                override fun implTo(obj: T): SExpr =
+                    SAtom(obj.toString().toByteArray())
+
+                override fun implFrom(expr: SExpr): T =
+                    byName.getValue(expr.requireAtom().asString()) as T
             }
         } else {
             error("Data class or sealed class required.")
