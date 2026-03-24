@@ -40,9 +40,14 @@ internal class TreeBuilder : Reader {
     }.requireList()
 }
 
-fun readSExpr(input: CharStream): SList = TreeBuilder().apply { readSExpr(input, this) }.finish()
 /**
  * Translate the input into an s-expression.
+ */
+fun readSExpr(input: CharStream): SList =
+    TreeBuilder().apply { readSExpr(input, this) }.finish()
+
+/**
+ * Consume the parse output with the reader.
  */
 fun readSExpr(input: CharStream, reader: Reader) {
     val lexer = lexer(input)
@@ -65,7 +70,6 @@ fun readSExpr(input: CharStream, reader: Reader) {
     }
 }
 
-
 fun SExpr.requireList(msg: String = "Expected list."): SList = when (this) {
     is SAtom -> error(msg)
     is SList -> this
@@ -76,4 +80,7 @@ fun SExpr.requireAtom(msg: String = "Expected atom."): SAtom = when (this) {
     is SList -> error(msg)
 }
 
+/**
+ * Convert atom data to UTF-8 string.
+ */
 fun SAtom.asString(): String = String(data, Charsets.UTF_8)

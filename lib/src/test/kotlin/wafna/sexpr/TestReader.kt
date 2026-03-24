@@ -36,5 +36,14 @@ class TestReader {
                 assertAtom(exprs[1], "c")
             }
         }
+        // Nulls...
+        parse("[0:]").apply {
+            assertEquals(exprs.size, 1)
+            assertAtom(exprs[0], "")
+        }
+        parse("[\"\"]").apply {
+            assertEquals(exprs.size, 1)
+            assertAtom(exprs[0], "")
+        }
     }
 }
