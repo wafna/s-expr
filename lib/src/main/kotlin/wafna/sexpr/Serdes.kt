@@ -124,7 +124,7 @@ class Serdes private constructor() {
                 }
             }
 
-            else -> error("Unsupported adapter type ${kClass}${adapters.toList().joinToString { "\n\t${it.first}" }}")
+            else -> error("Unsupported adapter type ${kClass.qualifiedName}${adapters.toList().joinToString { "\n\t${it.first}" }}")
         }
     }
 
@@ -133,20 +133,23 @@ class Serdes private constructor() {
         @Suppress("UNCHECKED_CAST")
         val kClass = kType.classifier as KClass<T>
         require(kClass.isData) { "${kClass.qualifiedName} is not a data class" }
+        // Assume a one-to-one correspondence between the ctor and the object properties.
         val ctor = kClass.primaryConstructor ?: error("No primary constructor found for ${kClass.qualifiedName}")
+        // Cache some lookups for fast serialization, below.
         val adaptersByName: Map<String, Adapter<*>> = buildMap {
             ctor.parameters.forEach { param ->
                 require(!param.isVararg) { "Varargs not supported." }
                 put(param.name!!, adapterFor(param.type))
             }
         }
+        val propertiesByName = kClass.memberProperties.associateBy { it.name }
         val paramsByName = ctor.parameters.associateBy { it.name }
         adapters[kClass] = object : Adapter<T>() {
             override fun implTo(obj: T): SExpr = buildSExpr {
                 adaptersByName.forEach { (name, adapter) ->
                     list {
                         atom(name.toByteArray(Charsets.UTF_8))
-                        val property = kClass.memberProperties.firstOrNull { it.name == name }
+                        val property = propertiesByName[name]
                             ?: error("${kClass.qualifiedName} has no property with name '$name'")
                         val value = property.get(obj)
                         val expr = adapter.toSExpr(value)
