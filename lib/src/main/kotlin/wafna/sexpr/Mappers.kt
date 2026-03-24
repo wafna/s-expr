@@ -27,6 +27,7 @@ private abstract class Adapter<T> : Mapper<T> {
     @Suppress("unused")
     fun actualFrom(expr: SExpr): T? = if (expr == SAtom.NULL) null else fromSExpr(expr)
 
+    // Look up the targets to save one reflective step.
     private fun fn(name: String, vararg parameterTypes: Class<*>): Method =
         javaClass.getMethod(name, *parameterTypes).apply { trySetAccessible() }
 
