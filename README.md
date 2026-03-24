@@ -13,15 +13,20 @@ to reduce strain on the shift key.
 
 This package includes:
 
-* Reader and Writer.
+## Reader and Writer.
 
 Turn s-expressions into strings or streams of bytes and back again.
 Features both event ("SAX") and document ("DOM") styles of parsing.
 
-* Object mapping.
+## Object mapping.
 
-Serialize data classes and collections using s-expressions. Primitives and the collections, List, Set, Pair, and Map, 
-are inherently supported.
+Serialize data classes and collections using s-expressions.
+
+**Primitives**: Byte, Int, Double, String, Char, Boolean
+
+**Collections**: List, Set, Pair, Map 
+
+Single level hierarchies of data classes in sealed classes or interfaces.
 
 ```kotlin
 data class Thing(val id: Int, val name: String)
@@ -35,17 +40,19 @@ val thing = Thing(42, "Banana")
 val expr = serdes.toSExpr(thing)
 // Note that converting strings to and from s-expressions and converting objects to and from s-expressions
 // are distinctly separate.
-println(expr.showSExpr())
+println(expr.canonicalize())
+// Recreate the object from the s-expression.
 val actualFromExpr = serdes.fromSExpr<Thing>(expr)
 require(thing == actualFromExpr)
-val actualFromString = serdes.fromSExpr<Thing>(readSExpr(CharStream.from(expr.showSExpr())))
+// Recreate the object from the parsed, canonicalized s-expression.
+val actualFromString = serdes.fromSExpr<Thing>(readSExpr(CharStream.from(expr.canonicalize())))
 require(thing == actualFromString)
 ```
 Produces,
 ```text
 [[2:id2:42][4:name6:Banana]]
 ```
-* Builder.
+## Builder
 
 Create literal s-expressions in the manner of Kotlin's builder functions.
 
