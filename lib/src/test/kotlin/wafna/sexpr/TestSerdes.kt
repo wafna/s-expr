@@ -145,7 +145,7 @@ class TestSerdes {
     companion object {
         inline fun <reified T> Serdes.testObject(expected: T): Serdes = apply {
             val expr = toSExpr(expected)
-            println(expr.showSExpr())
+            // println(expr.showSExpr())
             val actual = fromSExpr<T>(expr)
             assertEquals(expected, actual)
         }
