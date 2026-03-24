@@ -113,7 +113,7 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
     return stream
 }
 
-fun SExpr.writeToString(settings: WriterSettings.() -> Unit = {}): String {
+fun SExpr.showSExpr(settings: WriterSettings.() -> Unit = {}): String {
     ByteArrayOutputStream().use {
         write(it, settings)
         return it.toByteArray().toString(Charsets.UTF_8)

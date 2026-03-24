@@ -19,12 +19,13 @@ Serialize data classes and collections using s-expressions with SObjects.
 
 ```kotlin
 data class Thing(val id: Int, val name: String)
-SObjects {
+
+val serdes = Serdes {
+    // Register adapters for data classes in this "constructor" block.
     register<Thing>()
-}.run {
-    val expr = toSExpr(Thing(42, "Banana"))
-    println(expr.writeToString())
 }
+val expr = serdes.toSExpr(Thing(42, "Banana")).showSExpr()
+println(expr)
 ```
 Produces,
 ```text

@@ -27,22 +27,22 @@ data class NestedObjects(
     val listsOfPrimitives: ListsOfPrimitives
 )
 
-class TestSObjects {
+class TestSerdes {
     @Test
     fun primitives() {
-        SObjects {
+        Serdes {
             register<PrimitivesOnly>()
         }.testObject(PrimitivesOnly("foo", 42, PI))
     }
     @Test
     fun listsOfPrimitives() {
-        SObjects {
+        Serdes {
             register<ListsOfPrimitives>()
         }.testObject(listsOfPrimitives)
     }
     @Test
     fun listsOfListsOfPrimitives() {
-        SObjects {
+        Serdes {
             register<ListOfListOfPrimitives>()
         }.testObject(
             ListOfListOfPrimitives(
@@ -55,7 +55,7 @@ class TestSObjects {
     }
     @Test
     fun nestedObjects() {
-        SObjects {
+        Serdes {
             register<PrimitivesOnly>()
             register<ListsOfPrimitives>()
             register<NestedObjects>()
@@ -68,32 +68,32 @@ class TestSObjects {
     }
     @Test
     fun list() {
-        SObjects().testObject(listOf(1, 2, 3))
-        SObjects { register<PrimitivesOnly>() }
+        Serdes().testObject(listOf(1, 2, 3))
+        Serdes { register<PrimitivesOnly>() }
             .testObject(List(4) { PrimitivesOnly("foo", 42, PI) })
     }
     @Test
     fun set() {
-        SObjects().testObject(setOf(1, 2, 3))
+        Serdes().testObject(setOf(1, 2, 3))
     }
     @Test
     fun pair() {
-        SObjects().testObject(9 to 5)
-        SObjects().testObject("positions" to listOf(1, 2, 3))
+        Serdes().testObject(9 to 5)
+        Serdes().testObject("positions" to listOf(1, 2, 3))
     }
     @Test
     fun map() {
-        SObjects().testObject(mapOf(1 to 2, 3 to 4))
+        Serdes().testObject(mapOf(1 to 2, 3 to 4))
     }
     @Test
     fun arrayNotSupported() {
         assertThrows<Throwable> {
-            SObjects().testObject(arrayOf(1, 2, 3, 4))
+            Serdes().testObject(arrayOf(1, 2, 3, 4))
         }
     }
 
     companion object {
-        inline fun <reified T> SObjects.testObject(obj: T) {
+        inline fun <reified T> Serdes.testObject(obj: T) {
             val expr = toSExpr(obj)
             assertEquals(obj, fromSExpr(expr))
         }

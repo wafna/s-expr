@@ -23,12 +23,12 @@ private interface Adapter<T> {
 /**
  * Exposes initialization to clients.
  */
-class SObjectsRegistrar internal constructor(val sObjects: SObjects) {
+class SerdeRegistry internal constructor(val serdes: Serdes) {
     /**
      * Create an adapter for a data class.
-     * This class may now appear in supported collections.
+     * This data class may now appear in supported collections and as members in other data classes.
      */
-    inline fun <reified T : Any> register() = sObjects.register<T>(typeOf<T>())
+    inline fun <reified T : Any> register() = serdes.register<T>(typeOf<T>())
 }
 
 /**
@@ -36,7 +36,7 @@ class SObjectsRegistrar internal constructor(val sObjects: SObjects) {
  * Create an instance, register data classes, invoke toSExpr and fromSExpr.
  * Primitives, (registered) data classes, and pairs, maps, sets, and lists thereof are handled.
  */
-class SObjects private constructor() {
+class Serdes private constructor() {
 
     private val adapters = mutableMapOf<Class<*>, Adapter<*>>(
         // Primitive adapters.
@@ -244,8 +244,8 @@ class SObjects private constructor() {
         /**
          * Pseudo ctor with initializer function.
          */
-        operator fun invoke(initializer: SObjectsRegistrar.() -> Unit = {}): SObjects = SObjects().apply {
-            SObjectsRegistrar(this).initializer()
+        operator fun invoke(initializer: SerdeRegistry.() -> Unit = {}): Serdes = Serdes().apply {
+            SerdeRegistry(this).initializer()
         }
 
         private fun SExpr.requireList(msg: String = "Expected list."): SList = when (this) {
