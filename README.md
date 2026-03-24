@@ -7,22 +7,21 @@ Importantly, there is no restriction on the values of the bytes.
 This makes the format extremely efficient for all forms of data, esp. binary.
 
 For literal s-expressions, the parser recognizes bare words (e.g. C style identifiers), 
-double quoted strings (e.g. C style strings), and run length encoded atoms. 
-
+double-quoted strings (e.g. C style strings), and run length encoded atoms. 
 This implementation uses square brackets instead of parentheses for literal s-expressions 
 to reduce strain on the shift key.
 
 This package includes:
 
-
 * Reader and Writer.
 
-Turn s-expressions into streams of bytes and back again.
+Turn s-expressions into strings or streams of bytes and back again.
 Features both event ("SAX") and document ("DOM") styles of parsing.
 
 * Object mapping.
 
-Serialize data classes and collections using s-expressions.
+Serialize data classes and collections using s-expressions. Primitives and the collections, List, Set, Pair, and Map, 
+are inherently supported.
 
 ```kotlin
 data class Thing(val id: Int, val name: String)
@@ -34,11 +33,13 @@ val serdes = Serdes {
 val thing = Thing(42, "Banana")
 // All serialization goes through the one object.
 val expr = serdes.toSExpr(thing)
-println(expr.showSExpr())
 // Note that converting strings to and from s-expressions and converting objects to and from s-expressions
 // are distinctly separate.
-val actual = serdes.fromSExpr<Thing>(expr)
-require(thing == actual)
+println(expr.showSExpr())
+val actualFromExpr = serdes.fromSExpr<Thing>(expr)
+require(thing == actualFromExpr)
+val actualFromString = serdes.fromSExpr<Thing>(readSExpr(CharStream.from(expr.showSExpr())))
+require(thing == actualFromString)
 ```
 Produces,
 ```text
