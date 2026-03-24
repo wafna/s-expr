@@ -12,7 +12,7 @@ class TestWriter {
                 indent = 2
                 dataFormat = fmt
             }.toString()
-            compareSExpr(expr, parse(CharStream.from(text)))
+            compareSExpr(expr, readSExpr(CharStream.from(text)))
         }
     }
     @Test

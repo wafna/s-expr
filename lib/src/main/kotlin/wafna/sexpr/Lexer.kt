@@ -11,12 +11,16 @@ internal interface Lexer {
 }
 
 /**
- * Create a Lexer for S-expressions.
+ * Create a Lexer for an input.
  */
 internal fun lexer(input: CharStream): Lexer = object : Lexer {
-    val buffer = StringBuilder()
+    val currentToken = StringBuilder()
+    fun take() {
+        currentToken.append(input.take())
+    }
+
     override fun nextToken(): Token {
-        buffer.clear()
+        currentToken.clear()
         while (input.peek()?.isWhitespace() == true)
             input.take()
         return when (val c = input.take()) {
@@ -25,8 +29,8 @@ internal fun lexer(input: CharStream): Lexer = object : Lexer {
             ']' -> Token.RBracket
             ':' -> Token.Colon
             '"' -> parseString()
-            '-' -> parseNumber(c)
             else -> {
+                // Accepts leading zeros.
                 if (c.isDigit()) {
                     parseNumber(c)
                 } else if (c.isJavaIdentifierStart()) {
@@ -46,23 +50,22 @@ internal fun lexer(input: CharStream): Lexer = object : Lexer {
         }
     }.array()
 
-    private fun take() = input.take().also { buffer.append(it) }
-
     // Java identifiers.
     private fun parseBare(init: Char): Token {
-        buffer.append(init)
+        currentToken.append(init)
         while (input.peek()?.isJavaIdentifierPart() == true) {
             take()
         }
-        return Token.LString(buffer.toString())
+        return Token.LString(currentToken.toString())
     }
 
+    // prefix to RLE atom.
     private fun parseNumber(init: Char): Token.LInteger {
-        buffer.append(init)
+        currentToken.append(init)
         while (input.peek()?.isDigit() == true) {
             take()
         }
-        val literal = buffer.toString()
+        val literal = currentToken.toString()
         return literal.toIntOrNull()?.let { lit -> Token.LInteger(lit) }
             ?: error("Invalid numeric literal: $literal")
     }
@@ -82,12 +85,12 @@ internal fun lexer(input: CharStream): Lexer = object : Lexer {
                 '\\' -> {
                     input.take()
                     when (val e = input.peek()) {
-                        '\\' -> buffer.append('\\')
-                        't' -> buffer.append('\t')
-                        'r' -> buffer.append('\r')
-                        'n' -> buffer.append('\n')
-                        'b' -> buffer.append('\b')
-                        '"' -> buffer.append('\"')
+                        '\\' -> currentToken.append('\\')
+                        't' -> currentToken.append('\t')
+                        'r' -> currentToken.append('\r')
+                        'n' -> currentToken.append('\n')
+                        'b' -> currentToken.append('\b')
+                        '"' -> currentToken.append('\"')
                         else -> error("Invalid escape sequence: \\$e")
                     }
                     input.take()
@@ -101,6 +104,6 @@ internal fun lexer(input: CharStream): Lexer = object : Lexer {
                         take()
             }
         }
-        return Token.LString(buffer.toString())
+        return Token.LString(currentToken.toString())
     }
 }
