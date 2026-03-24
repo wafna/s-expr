@@ -45,6 +45,8 @@ enum class Enum {
     Bing, Bang, Boom
 }
 
+data class EnumContainer(val enum: Enum)
+
 class TestSerdes {
     @Test
     fun primitives() {
@@ -133,17 +135,19 @@ class TestSerdes {
     fun enums() {
         Serdes {
             register<Enum>()
+            register<EnumContainer>()
         }.apply {
-//            Enum.entries.forEach { testObject(it) }
-            testObject(Enum.Boom)
+            Enum.entries.forEach { testObject(it) }
+            Enum.entries.forEach { testObject(EnumContainer(it)) }
         }
     }
 
     companion object {
-        inline fun <reified T> Serdes.testObject(obj: T): Serdes = apply {
-            val expr = toSExpr(obj)
+        inline fun <reified T> Serdes.testObject(expected: T): Serdes = apply {
+            val expr = toSExpr(expected)
             println(expr.showSExpr())
-            assertEquals(obj, fromSExpr(expr))
+            val actual = fromSExpr<T>(expr)
+            assertEquals(expected, actual)
         }
 
         val primitivesOnly = PrimitivesOnly(
