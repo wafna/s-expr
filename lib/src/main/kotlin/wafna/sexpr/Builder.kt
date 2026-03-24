@@ -18,22 +18,23 @@ class SExprBuilder {
         exprs.push(SAtom(string.toByteArray()))
     }
 
-    fun empty() {
-        exprs.push(SAtom.NULL)
-    }
-
+    /**
+     * Create a list.
+     */
     fun list(f: SExprBuilder.() -> Unit) {
         val builder = SExprBuilder()
         builder.f()
         exprs.push(builder.result())
     }
 
-    fun any(expr: SExpr) {
+    /**
+     * Add anything to the current list.
+     */
+    fun expr(expr: SExpr) {
         exprs.push(expr)
     }
 
     internal fun result(): SList = SList(exprs.take(exprs.size))
-
 }
 
 /**

@@ -10,5 +10,6 @@ class SAtom(val data: ByteArray) : SExpr() {
         val NULL = SAtom(ByteArray(0))
     }
 }
+
 class SList(val exprs: List<SExpr>) : SExpr()
 

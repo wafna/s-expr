@@ -16,6 +16,7 @@ class CharStream(private val iterator: Iterator<Char>) {
             } else ++column
         }
     }
+
     fun take(): Char? = if (null != peek) {
         peek.also { peek = null }
     } else {
@@ -26,6 +27,7 @@ class CharStream(private val iterator: Iterator<Char>) {
             } else ++column
         }
     }
+
     companion object {
         fun from(s: String) = CharStream(s.iterator())
     }

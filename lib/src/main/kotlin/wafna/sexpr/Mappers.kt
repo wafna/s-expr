@@ -45,7 +45,7 @@ class MapperRegistry internal constructor(val mappers: Mappers) {
     /**
      * Register a custom mapper for a type T.
      */
-    inline fun <reified T: Any> register(mapper: Mapper<T>) = mappers.adapt(typeOf<T>(), mapper)
+    inline fun <reified T : Any> register(mapper: Mapper<T>) = mappers.adapt(typeOf<T>(), mapper)
 }
 
 /**
@@ -174,7 +174,7 @@ class Mappers private constructor() {
                     val objClass = obj::class
                     val typeName = objClass.simpleName!!
                     atom(typeName)
-                    any(typeAdapters.getValue(typeName).safeTo(obj))
+                    expr(typeAdapters.getValue(typeName).safeTo(obj))
                 }
 
                 override fun fromSExpr(expr: SExpr): T {
@@ -225,7 +225,7 @@ class Mappers private constructor() {
                             ?: error("${kClass.qualifiedName} has no property with name '$name'")
                         val value = property.get(obj)
                         val expr = adapter.safeTo(value)
-                        any(expr)
+                        expr(expr)
                     }
                 }
             }
@@ -268,7 +268,7 @@ class Mappers private constructor() {
     private fun fromList(itemType: KType, obj: List<*>): SList {
         val adapter = adapterFor(itemType)
         return buildSExpr {
-            obj.forEach { any(adapter.safeTo(it)) }
+            obj.forEach { expr(adapter.safeTo(it)) }
         }
     }
 
@@ -281,7 +281,7 @@ class Mappers private constructor() {
     private fun fromSet(itemType: KType, obj: Set<*>): SList {
         val adapter = adapterFor(itemType)
         return buildSExpr {
-            obj.forEach { any(adapter.safeTo(it)) }
+            obj.forEach { expr(adapter.safeTo(it)) }
         }
     }
 
@@ -292,8 +292,8 @@ class Mappers private constructor() {
     } as T
 
     private fun fromPair(type1: KType, type2: KType, obj: Pair<*, *>): SList = buildSExpr {
-        any(adapterFor(type1).safeTo(obj.first))
-        any(adapterFor(type2).safeTo(obj.second))
+        expr(adapterFor(type1).safeTo(obj.first))
+        expr(adapterFor(type2).safeTo(obj.second))
     }
 
     private fun <T> toPair(type1: KType, type2: KType, expr: SList): T {
@@ -306,8 +306,8 @@ class Mappers private constructor() {
     private fun fromMap(type1: KType, type2: KType, obj: Map<*, *>): SList = buildSExpr {
         obj.forEach {
             list {
-                any(adapterFor(type1).safeTo(it.key))
-                any(adapterFor(type2).safeTo(it.value))
+                expr(adapterFor(type1).safeTo(it.key))
+                expr(adapterFor(type2).safeTo(it.value))
             }
         }
     }
