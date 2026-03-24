@@ -17,9 +17,35 @@ This package includes:
 
 Serialize data classes and collections using s-expressions with SObjects.
 
+```kotlin
+data class Thing(val id: Int, val name: String)
+SObjects {
+    register<Thing>()
+}.run {
+    val expr = toSExpr(Thing(42, "Banana"))
+    println(expr.writeToString())
+}
+```
+Produces,
+```text
+[[2:id2:42][4:name6:Banana]]
+```
 * Builder.
 
 Create literal s-expressions in the manner of Kotlin's builder functions.
+
+```kotlin
+buildSExpr {
+    list {
+        atom("id")
+        atom("42")
+    }
+    list {
+        atom("name")
+        atom("Banana")
+    }
+}
+```
 
 * Writer.
 
