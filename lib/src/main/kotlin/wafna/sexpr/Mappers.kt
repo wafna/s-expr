@@ -19,19 +19,20 @@ interface Mapper<T> {
  * It would be nice to make the actual methods private, as well, but they seem to become invisible to reflection.
  */
 private abstract class Adapter<T> : Mapper<T> {
-    @Suppress("unused")
-    fun actualTo(obj: T?): SExpr = obj?.let { toSExpr(it) } ?: SAtom.NULL
-    @Suppress("unused")
-    fun actualFrom(expr: SExpr): T? = if (expr == SAtom.NULL) null else fromSExpr(expr)
+//    @Suppress("unused")
+//    fun actualTo(obj: T?): SExpr = obj?.let { toSExpr(it) } ?: SAtom.NULL
+//    @Suppress("unused")
+//    fun actualFrom(expr: SExpr): T? = if (expr == SAtom.NULL) null else fromSExpr(expr)
 
     private fun fn(name: String, vararg parameterTypes: Class<*>): Method =
         javaClass.getMethod(name, *parameterTypes).apply { trySetAccessible() }
 
-    private val fnTo = fn("actualTo", Any::class.java)
-    private val fnFrom = fn("actualFrom", SExpr::class.java)
+    private val fnTo = fn("toSExpr", Any::class.java)
+    private val fnFrom = fn("fromSExpr", SExpr::class.java)
 
-    fun safeTo(obj: Any?): SExpr = fnTo(this, obj) as SExpr
-    fun safeFrom(expr: SExpr): Any? = fnFrom(this, expr)
+    fun safeTo(obj: T?): SExpr = obj?.let { fnTo(this, obj) as SExpr } ?: SAtom.NULL
+    @Suppress("UNCHECKED_CAST")
+    fun safeFrom(expr: SExpr): T? = if (expr == SAtom.NULL) null else fnFrom(this, expr) as T?
 }
 
 /**
