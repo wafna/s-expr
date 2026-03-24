@@ -2,8 +2,11 @@ package wafna.sexpr
 
 import kotlin.math.E
 import kotlin.math.PI
+import kotlin.reflect.KClass
+import kotlin.reflect.typeOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import org.junit.jupiter.api.assertThrows
 
 data class PrimitivesOnly(
     val name: String,
@@ -83,6 +86,12 @@ class TestObjectifier {
     @Test
     fun map() {
         Objectifier().testObject(mapOf(1 to 2, 3 to 4))
+    }
+    @Test
+    fun arrayNotSupported() {
+        assertThrows<Throwable> {
+            Objectifier().testObject(arrayOf(1, 2, 3, 4))
+        }
     }
 
     companion object {
