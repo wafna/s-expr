@@ -89,8 +89,9 @@ class TestSerdes {
     @Test
     fun list() {
         Serdes().testObject(listOf(1, 2, 3))
+        Serdes().testObject(List(3) { x -> List(3) { y -> x + y } })
         Serdes { register<PrimitivesOnly>() }
-            .testObject(List(4) { PrimitivesOnly("foo", 42, PI) })
+            .testObject(List(4) { PrimitivesOnly("$it", it, it.toDouble()) })
     }
     @Test
     fun set() {
