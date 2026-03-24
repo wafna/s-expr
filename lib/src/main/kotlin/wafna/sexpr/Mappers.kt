@@ -15,7 +15,7 @@ interface Mapper<T> {
 
 /**
  * Uses reflection to invoke its members in order to let the JVM sort out the types, which types we don't know.
- * The "actual" methods intercept NULLs, then defer to the "impl" methods.
+ * The "actual" methods intercept NULLs, then defer to the implementation.
  * It would be nice to make the actual methods private, as well, but they seem to become invisible to reflection.
  */
 private abstract class Adapter<T> : Mapper<T> {
