@@ -5,6 +5,7 @@ import kotlin.math.PI
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.assertThrows
+import java.awt.Color
 
 data class PrimitivesOnly(
     val name: String,
@@ -155,6 +156,34 @@ class TestSerdes {
         }.apply {
             EnumP.entries.forEach { testObject(it) }
             EnumP.entries.forEach { testObject(EnumContainerP(it)) }
+        }
+    }
+    @Test
+    fun custom() {
+        val serdes = Serdes {
+            serde(object : Serde<Color> {
+                override fun toSExpr(obj: Color): SExpr = buildSExpr{
+                    list { atom("red"); atom(obj.red.toString()) }
+                    list { atom("green"); atom(obj.green.toString()) }
+                    list { atom("blue"); atom(obj.blue.toString()) }
+                }
+
+                override fun fromSExpr(expr: SExpr): Color = buildMap {
+                    expr.requireList().exprs.forEach { e ->
+                        val (name, color) = e.requireList().exprs
+                        put(name.requireAtom().asString(), color.requireAtom().asString().toInt())
+                    }
+                }.let {
+                    Color(it.getValue("red"), it.getValue("green"), it.getValue("blue"))
+                }
+            })
+        }
+        val color = Color(10, 20, 30)
+        serdes.toSExpr(color).let { s ->
+            val u = serdes.fromSExpr<Color>(s)
+            require(u.red == color.red)
+            require(u.green == color.green)
+            require(u.blue == color.blue)
         }
     }
 
