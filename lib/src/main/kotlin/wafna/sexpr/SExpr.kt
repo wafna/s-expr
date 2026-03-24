@@ -5,6 +5,10 @@ package wafna.sexpr
  * Atoms are arrays of bytes.
  */
 sealed class SExpr
-class SAtom(val data: ByteArray) : SExpr()
+class SAtom(val data: ByteArray) : SExpr() {
+    companion object {
+        val NULL = SAtom(ByteArray(0))
+    }
+}
 class SList(val exprs: List<SExpr>) : SExpr()
 

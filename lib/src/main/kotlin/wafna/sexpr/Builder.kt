@@ -19,7 +19,7 @@ class SExprBuilder {
     }
 
     fun empty() {
-        exprs.push(NULL)
+        exprs.push(SAtom.NULL)
     }
 
     fun list(f: SExprBuilder.() -> Unit) {
@@ -34,9 +34,6 @@ class SExprBuilder {
 
     internal fun result(): SList = SList(exprs.take(exprs.size))
 
-    companion object {
-        val NULL = SAtom(ByteArray(0))
-    }
 }
 
 /**

@@ -12,6 +12,12 @@ data class PrimitivesOnly(
     val value: Double
 )
 
+data class Nullables(
+    val name: String?,
+    val count: Int?,
+    val value: Double?
+)
+
 data class ListsOfPrimitives(
     val names: List<String>,
     val counts: List<Int>,
@@ -67,6 +73,12 @@ class TestSerdes {
         )
     }
     @Test
+    fun nullables() {
+        Serdes {
+            register<Nullables>()
+        }.testObject(nullables)
+    }
+    @Test
     fun list() {
         Serdes().testObject(listOf(1, 2, 3))
         Serdes { register<PrimitivesOnly>() }
@@ -98,6 +110,7 @@ class TestSerdes {
             assertEquals(obj, fromSExpr(expr))
         }
 
+        val nullables = Nullables(null, null, null)
         val primitivesOnly = PrimitivesOnly(
             name = "foo",
             count = 42,

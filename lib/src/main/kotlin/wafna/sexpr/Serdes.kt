@@ -5,19 +5,27 @@ import kotlin.reflect.KType
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.typeOf
+import java.lang.reflect.Method
 
 /**
  * Uses reflection to invoke its members in order to let the JVM sort out the types, which types we don't know.
+ * The "actual" methods intercept NULLs, then defer to the "impl" methods.
  */
 private abstract class Adapter<T> {
     abstract fun implTo(obj: T): SExpr
     abstract fun implFrom(expr: SExpr): T
 
-    private fun fn(name: String) = javaClass.methods.find { it.name == name }
-        ?: error("Internal error: missing $name")
+    private fun fn(name: String, vararg parameterTypes: Class<*>): Method {
+        return javaClass.getMethod(name, *parameterTypes).apply { trySetAccessible() }
+    }
 
-    private val fnTo = fn("implTo")
-    private val fnFrom = fn("implFrom")
+    @Suppress("unused")
+    fun actualTo(obj: T?): SExpr = obj?.let { implTo(it) } ?: SAtom.NULL
+    @Suppress("unused")
+    fun actualFrom(expr: SExpr): T? = if (expr == SAtom.NULL) null else implFrom(expr)
+
+    private val fnTo = fn("actualTo", Any::class.java)
+    private val fnFrom = fn("actualFrom", SExpr::class.java)
     fun toSExpr(obj: Any?): SExpr = fnTo(this, obj) as SExpr
     fun fromSExpr(expr: SExpr): Any? = fnFrom(this, expr)
 }
