@@ -41,11 +41,17 @@ sealed interface Sealed {
 
 data class SealedContainer(val sealed: Sealed)
 
-enum class Enum {
+enum class EnumC {
     Bing, Bang, Boom
 }
 
-data class EnumContainer(val enum: Enum)
+data class EnumContainerC(val enumC: EnumC)
+
+enum class EnumP(val x: Int) {
+    Bing(1), Bang(2), Boom(3)
+}
+
+data class EnumContainerP(val enumP: EnumP)
 
 class TestSerdes {
     @Test
@@ -132,13 +138,23 @@ class TestSerdes {
             .testObject(SealedContainer(Sealed.Sealed3(42.0)))
     }
     @Test
-    fun enums() {
+    fun enumC() {
         Serdes {
-            register<Enum>()
-            register<EnumContainer>()
+            register<EnumC>()
+            register<EnumContainerC>()
         }.apply {
-            Enum.entries.forEach { testObject(it) }
-            Enum.entries.forEach { testObject(EnumContainer(it)) }
+            EnumC.entries.forEach { testObject(it) }
+            EnumC.entries.forEach { testObject(EnumContainerC(it)) }
+        }
+    }
+    @Test
+    fun enumP() {
+        Serdes {
+            register<EnumP>()
+            register<EnumContainerP>()
+        }.apply {
+            EnumP.entries.forEach { testObject(it) }
+            EnumP.entries.forEach { testObject(EnumContainerP(it)) }
         }
     }
 
