@@ -23,7 +23,7 @@ private interface Adapter<T> {
 /**
  * A collection of adapters for translating objects to and from s-expressions.
  * Create an instance, register data classes, invoke toSExpr and fromSExpr.
- * Primitives, (registered) data classes, pairs, maps, sets, and lists thereof are handled.
+ * Primitives, (registered) data classes, and pairs, maps, sets, and lists thereof are handled.
  */
 class SObjects {
     private val adapters = mutableMapOf<Class<*>, Adapter<*>>().apply {
