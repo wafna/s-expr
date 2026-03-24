@@ -2,8 +2,6 @@ package wafna.sexpr
 
 import kotlin.math.E
 import kotlin.math.PI
-import kotlin.reflect.KClass
-import kotlin.reflect.typeOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.assertThrows
@@ -29,22 +27,22 @@ data class NestedObjects(
     val listsOfPrimitives: ListsOfPrimitives
 )
 
-class TestObjectifier {
+class TestSObjects {
     @Test
     fun primitives() {
-        Objectifier().apply {
+        SObjects().apply {
             register<PrimitivesOnly>()
         }.testObject(PrimitivesOnly("foo", 42, PI))
     }
     @Test
     fun listsOfPrimitives() {
-        Objectifier().apply {
+        SObjects().apply {
             register<ListsOfPrimitives>()
         }.testObject(listsOfPrimitives)
     }
     @Test
     fun listsOfListsOfPrimitives() {
-        Objectifier().apply {
+        SObjects().apply {
             register<ListOfListOfPrimitives>()
         }.testObject(
             ListOfListOfPrimitives(
@@ -57,7 +55,7 @@ class TestObjectifier {
     }
     @Test
     fun nestedObjects() {
-        Objectifier().apply {
+        SObjects().apply {
             register<PrimitivesOnly>()
             register<ListsOfPrimitives>()
             register<NestedObjects>()
@@ -70,32 +68,32 @@ class TestObjectifier {
     }
     @Test
     fun list() {
-        Objectifier().testObject(listOf(1, 2, 3))
-        Objectifier().apply { register<PrimitivesOnly>() }
+        SObjects().testObject(listOf(1, 2, 3))
+        SObjects().apply { register<PrimitivesOnly>() }
             .testObject(List(4) { PrimitivesOnly("foo", 42, PI) })
     }
     @Test
     fun set() {
-        Objectifier().testObject(setOf(1, 2, 3))
+        SObjects().testObject(setOf(1, 2, 3))
     }
     @Test
     fun pair() {
-        Objectifier().testObject(9 to 5)
-        Objectifier().testObject("positions" to listOf(1, 2, 3))
+        SObjects().testObject(9 to 5)
+        SObjects().testObject("positions" to listOf(1, 2, 3))
     }
     @Test
     fun map() {
-        Objectifier().testObject(mapOf(1 to 2, 3 to 4))
+        SObjects().testObject(mapOf(1 to 2, 3 to 4))
     }
     @Test
     fun arrayNotSupported() {
         assertThrows<Throwable> {
-            Objectifier().testObject(arrayOf(1, 2, 3, 4))
+            SObjects().testObject(arrayOf(1, 2, 3, 4))
         }
     }
 
     companion object {
-        inline fun <reified T> Objectifier.testObject(obj: T) {
+        inline fun <reified T> SObjects.testObject(obj: T) {
             val expr = toSExpr(obj)
             assertEquals(obj, fromSExpr(expr))
         }

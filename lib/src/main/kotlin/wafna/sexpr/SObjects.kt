@@ -25,7 +25,7 @@ private interface Adapter<T> {
  * Create an instance, register data classes, invoke toSExpr and fromSExpr.
  * Primitives, (registered) data classes, pairs, maps, sets, and lists thereof are handled.
  */
-class Objectifier {
+class SObjects {
     private val adapters = mutableMapOf<Class<*>, Adapter<*>>().apply {
         // Add all the primitive adapters.
         put(Byte::class.java, object : Adapter<Byte> {
