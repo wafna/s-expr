@@ -10,16 +10,16 @@ import kotlin.reflect.typeOf
  * Uses reflection to invoke its members in order to let the JVM sort out the types, which types we don't know.
  */
 private abstract class Adapter<T> {
-    abstract fun toSExpr(obj: T): SExpr
-    abstract fun fromSExpr(expr: SExpr): T
+    abstract fun implTo(obj: T): SExpr
+    abstract fun implFrom(expr: SExpr): T
 
     private fun fn(name: String) = javaClass.methods.find { it.name == name }
         ?: error("Internal error: missing $name")
 
-    private val fnTo = fn("toSExpr")
-    private val fnFrom = fn("fromSExpr")
-    fun invokeTo(obj: Any?): SExpr = fnTo(this, obj) as SExpr
-    fun invokeFrom(expr: SExpr): Any? = fnFrom(this, expr)
+    private val fnTo = fn("implTo")
+    private val fnFrom = fn("implFrom")
+    fun toSExpr(obj: Any?): SExpr = fnTo(this, obj) as SExpr
+    fun fromSExpr(expr: SExpr): Any? = fnFrom(this, expr)
 }
 
 /**
@@ -42,59 +42,59 @@ class Serdes private constructor() {
 
     private val adapters = mutableMapOf<Class<*>, Adapter<*>>(
         // Primitive adapters.
-        // Collection types are build on the fly, below.
+        // Collection types are built on the fly, below.
         Byte::class.java to object : Adapter<Byte>() {
-            override fun toSExpr(obj: Byte): SExpr = SAtom(ByteArray(1).also { it[0] = obj })
-            override fun fromSExpr(expr: SExpr): Byte = expr.requireAtom().data[0]
+            override fun implTo(obj: Byte): SExpr = SAtom(ByteArray(1).also { it[0] = obj })
+            override fun implFrom(expr: SExpr): Byte = expr.requireAtom().data[0]
         },
         Char::class.java to object : Adapter<Char>() {
-            override fun toSExpr(obj: Char): SExpr = SAtom(ByteArray(1).also { it[0] = obj.code.toByte() })
-            override fun fromSExpr(expr: SExpr): Char = expr.requireAtom().data[0].toInt().toChar()
+            override fun implTo(obj: Char): SExpr = SAtom(ByteArray(1).also { it[0] = obj.code.toByte() })
+            override fun implFrom(expr: SExpr): Char = expr.requireAtom().data[0].toInt().toChar()
         },
         String::class.java to object : Adapter<String>() {
-            override fun toSExpr(obj: String): SExpr = SAtom(obj.toByteArray())
-            override fun fromSExpr(expr: SExpr): String = expr.requireAtom().asString()
+            override fun implTo(obj: String): SExpr = SAtom(obj.toByteArray())
+            override fun implFrom(expr: SExpr): String = expr.requireAtom().asString()
         },
         Boolean::class.java to object : Adapter<Boolean>() {
-            override fun toSExpr(obj: Boolean): SExpr = SAtom(obj.toString().toByteArray())
-            override fun fromSExpr(expr: SExpr): Boolean =
+            override fun implTo(obj: Boolean): SExpr = SAtom(obj.toString().toByteArray())
+            override fun implFrom(expr: SExpr): Boolean =
                 expr.requireAtom().asString().run { toBooleanStrictOrNull() ?: error("Expected Boolean, got $this.") }
         },
         Int::class.java to object : Adapter<Int>() {
-            override fun toSExpr(obj: Int): SExpr = SAtom(obj.toString().toByteArray())
-            override fun fromSExpr(expr: SExpr): Int =
+            override fun implTo(obj: Int): SExpr = SAtom(obj.toString().toByteArray())
+            override fun implFrom(expr: SExpr): Int =
                 expr.requireAtom().asString().run { toIntOrNull() ?: error("Expected Int, got $this.") }
         },
         Long::class.java to object : Adapter<Long>() {
-            override fun toSExpr(obj: Long): SExpr = SAtom(obj.toString().toByteArray())
-            override fun fromSExpr(expr: SExpr): Long =
+            override fun implTo(obj: Long): SExpr = SAtom(obj.toString().toByteArray())
+            override fun implFrom(expr: SExpr): Long =
                 expr.requireAtom().asString().run { toLongOrNull() ?: error("Expected Long, got $this") }
         },
         Double::class.java to object : Adapter<Double>() {
-            override fun toSExpr(obj: Double): SExpr = SAtom(obj.toString().toByteArray())
-            override fun fromSExpr(expr: SExpr): Double =
+            override fun implTo(obj: Double): SExpr = SAtom(obj.toString().toByteArray())
+            override fun implFrom(expr: SExpr): Double =
                 expr.requireAtom().asString().run { toDoubleOrNull() ?: error("Expected Double, got $this") }
         }
     )
 
     // Find an adapter for this type or die in the attempt.
     // This includes building adapters for parameterized types using their (reified) type arguments.
-    private fun adapter(kType: KType): Adapter<*> {
+    private fun adapterFor(kType: KType): Adapter<*> {
         val kClass = kType.classifier as KClass<*>
         return adapters[kClass.java] ?: when (kClass) {
             List::class -> {
                 val itemType = kType.arguments.first().type!!
                 object : Adapter<List<*>>() {
-                    override fun toSExpr(obj: List<*>): SExpr = fromList(itemType, obj)
-                    override fun fromSExpr(expr: SExpr): List<*> = toList(itemType, expr.requireList())
+                    override fun implTo(obj: List<*>): SExpr = fromList(itemType, obj)
+                    override fun implFrom(expr: SExpr): List<*> = toList(itemType, expr.requireList())
                 }
             }
 
             Set::class -> {
                 val itemType = kType.arguments.first().type!!
                 object : Adapter<Set<*>>() {
-                    override fun toSExpr(obj: Set<*>): SExpr = fromSet(itemType, obj)
-                    override fun fromSExpr(expr: SExpr): Set<*> = toSet(itemType, expr.requireList())
+                    override fun implTo(obj: Set<*>): SExpr = fromSet(itemType, obj)
+                    override fun implFrom(expr: SExpr): Set<*> = toSet(itemType, expr.requireList())
                 }
             }
 
@@ -102,8 +102,8 @@ class Serdes private constructor() {
                 val type1 = kType.arguments[0].type!!
                 val type2 = kType.arguments[1].type!!
                 object : Adapter<Pair<*, *>>() {
-                    override fun toSExpr(obj: Pair<*, *>): SExpr = fromPair(type1, type2, obj)
-                    override fun fromSExpr(expr: SExpr): Pair<*, *> = toPair(type1, type2, expr.requireList())
+                    override fun implTo(obj: Pair<*, *>): SExpr = fromPair(type1, type2, obj)
+                    override fun implFrom(expr: SExpr): Pair<*, *> = toPair(type1, type2, expr.requireList())
                 }
             }
 
@@ -111,8 +111,8 @@ class Serdes private constructor() {
                 val type1 = kType.arguments[0].type!!
                 val type2 = kType.arguments[1].type!!
                 object : Adapter<Map<*, *>>() {
-                    override fun toSExpr(obj: Map<*, *>): SExpr = fromMap(type1, type2, obj)
-                    override fun fromSExpr(expr: SExpr): Map<*, *> = toMap(type1, type2, expr.requireList())
+                    override fun implTo(obj: Map<*, *>): SExpr = fromMap(type1, type2, obj)
+                    override fun implFrom(expr: SExpr): Map<*, *> = toMap(type1, type2, expr.requireList())
                 }
             }
 
@@ -129,25 +129,25 @@ class Serdes private constructor() {
         val adaptersByName: Map<String, Adapter<*>> = buildMap {
             ctor.parameters.forEach { param ->
                 require(!param.isVararg) { "Varargs not supported." }
-                put(param.name!!, adapter(param.type))
+                put(param.name!!, adapterFor(param.type))
             }
         }
         val paramsByName = ctor.parameters.associateBy { it.name }
         adapters[kClass.java] = object : Adapter<T>() {
-            override fun toSExpr(obj: T): SExpr = buildSExpr {
+            override fun implTo(obj: T): SExpr = buildSExpr {
                 adaptersByName.forEach { (name, adapter) ->
                     list {
                         atom(name.toByteArray(Charsets.UTF_8))
                         val property = kClass.memberProperties.firstOrNull { it.name == name }
                             ?: error("${kClass.qualifiedName} has no property with name '$name'")
                         val value = property.get(obj)
-                        val expr = adapter.invokeTo(value)
+                        val expr = adapter.toSExpr(value)
                         any(expr)
                     }
                 }
             }
 
-            override fun fromSExpr(expr: SExpr): T = expr.requireList().run {
+            override fun implFrom(expr: SExpr): T = expr.requireList().run {
                 ctor.callBy(buildMap {
                     exprs.forEach { expr ->
                         val list = expr.requireList().exprs
@@ -155,7 +155,7 @@ class Serdes private constructor() {
                         val name = list[0].requireAtom().asString()
                         val param = paramsByName[name] ?: error("Unknown param $name")
                         val adapter = adaptersByName[name] ?: error("Unknown param $name")
-                        val s = adapter.invokeFrom(list[1])
+                        val s = adapter.fromSExpr(list[1])
                         put(param, s)
                     }
                 })
@@ -169,7 +169,7 @@ class Serdes private constructor() {
     inline fun <reified T> toSExpr(obj: T): SExpr = toSExpr(typeOf<T>(), obj)
 
     @PublishedApi
-    internal fun <T> toSExpr(kType: KType, obj: T): SExpr = adapter(kType).invokeTo(obj)
+    internal fun <T> toSExpr(kType: KType, obj: T): SExpr = adapterFor(kType).toSExpr(obj)
 
     /**
      * Create an object from an s-expression.
@@ -178,44 +178,44 @@ class Serdes private constructor() {
 
     @PublishedApi
     @Suppress("UNCHECKED_CAST")
-    internal fun <T> fromSExpr(kType: KType, expr: SExpr): T = adapter(kType).invokeFrom(expr) as T
+    internal fun <T> fromSExpr(kType: KType, expr: SExpr): T = adapterFor(kType).fromSExpr(expr) as T
 
     // Collection handlers.
 
     private fun fromList(itemType: KType, obj: List<*>): SList {
-        val adapter = adapter(itemType)
+        val adapter = adapterFor(itemType)
         return buildSExpr {
-            obj.forEach { any(adapter.invokeTo(it)) }
+            obj.forEach { any(adapter.toSExpr(it)) }
         }
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> toList(itemType: KType, expr: SList): T = buildList {
-        val adapter = adapter(itemType)
-        expr.requireList().exprs.forEach { add(adapter.invokeFrom(it)) }
+        val adapter = adapterFor(itemType)
+        expr.requireList().exprs.forEach { add(adapter.fromSExpr(it)) }
     } as T
 
     private fun fromSet(itemType: KType, obj: Set<*>): SList {
-        val adapter = adapter(itemType)
+        val adapter = adapterFor(itemType)
         return buildSExpr {
-            obj.forEach { any(adapter.invokeTo(it)) }
+            obj.forEach { any(adapter.toSExpr(it)) }
         }
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> toSet(itemType: KType, expr: SList): T = buildSet {
-        val adapter = adapter(itemType)
-        expr.requireList().exprs.forEach { add(adapter.invokeFrom(it)) }
+        val adapter = adapterFor(itemType)
+        expr.requireList().exprs.forEach { add(adapter.fromSExpr(it)) }
     } as T
 
     private fun fromPair(type1: KType, type2: KType, obj: Pair<*, *>): SList = buildSExpr {
-        any(adapter(type1).invokeTo(obj.first))
-        any(adapter(type2).invokeTo(obj.second))
+        any(adapterFor(type1).toSExpr(obj.first))
+        any(adapterFor(type2).toSExpr(obj.second))
     }
 
     private fun <T> toPair(type1: KType, type2: KType, expr: SList): T {
-        val p = adapter(type1).invokeFrom(expr.exprs[0])
-        val q = adapter(type2).invokeFrom(expr.exprs[1])
+        val p = adapterFor(type1).fromSExpr(expr.exprs[0])
+        val q = adapterFor(type2).fromSExpr(expr.exprs[1])
         @Suppress("UNCHECKED_CAST")
         return Pair(p, q) as T
     }
@@ -223,26 +223,25 @@ class Serdes private constructor() {
     private fun fromMap(type1: KType, type2: KType, obj: Map<*, *>): SList = buildSExpr {
         obj.forEach {
             list {
-                any(adapter(type1).invokeTo(it.key))
-                any(adapter(type2).invokeTo(it.value))
+                any(adapterFor(type1).toSExpr(it.key))
+                any(adapterFor(type2).toSExpr(it.value))
             }
         }
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> toMap(type1: KType, type2: KType, expr: SList): T = buildMap {
-        val a1 = adapter(type1)
-        val a2 = adapter(type2)
+        val a1 = adapterFor(type1)
+        val a2 = adapterFor(type2)
         expr.exprs.forEach {
             val e = it.requireList().exprs
-            val p = a1.invokeFrom(e[0])
-            val q = a2.invokeFrom(e[1])
+            val p = a1.fromSExpr(e[0])
+            val q = a2.fromSExpr(e[1])
             put(p, q)
         }
     } as T
 
     companion object {
-
         /**
          * Pseudo ctor with initializer function.
          */
