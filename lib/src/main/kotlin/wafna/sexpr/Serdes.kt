@@ -15,9 +15,8 @@ private abstract class Adapter<T> {
     abstract fun implTo(obj: T): SExpr
     abstract fun implFrom(expr: SExpr): T
 
-    private fun fn(name: String, vararg parameterTypes: Class<*>): Method {
-        return javaClass.getMethod(name, *parameterTypes).apply { trySetAccessible() }
-    }
+    private fun fn(name: String, vararg parameterTypes: Class<*>): Method =
+        javaClass.getMethod(name, *parameterTypes).apply { trySetAccessible() }
 
     @Suppress("unused")
     fun actualTo(obj: T?): SExpr = obj?.let { implTo(it) } ?: SAtom.NULL
