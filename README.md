@@ -45,22 +45,21 @@ sealed interface Sealed {
 Mappers {
     register(object : Mapper<Color> {
         override fun toSExpr(obj: Color): SExpr = buildSExpr {
-            list { atom("red"); atom(obj.red.toString()) }
-            list { atom("green"); atom(obj.green.toString()) }
-            list { atom("blue"); atom(obj.blue.toString()) }
+            atom(obj.red.toString())
+            atom(obj.green.toString())
+            atom(obj.blue.toString())
         }
 
         override fun fromSExpr(expr: SExpr): Color = expr.requireList().let { list ->
-            fun field(index: Int, name: String) = list.exprs[index].requireList().let {
-                require(it.exprs[0].requireAtom().asString() == name)
-                it.exprs[1].requireAtom().asString().toInt()
-            }
-            Color(field(0, "red"), field(1, "green"), field(2, "blue"))
+            fun field(index: Int) = list.exprs[index].requireAtom().asString().toInt()
+            Color(field(0), field(1), field(2))
 
         }
     })
 }
 ```
+
+### Quick Start
 
 ```kotlin
 data class Thing(val id: Int, val name: String)

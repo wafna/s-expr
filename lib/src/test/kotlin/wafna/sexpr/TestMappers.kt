@@ -163,27 +163,23 @@ class TestMappers {
         val mappers = Mappers {
             register(object : Mapper<Color> {
                 override fun toSExpr(obj: Color): SExpr = buildSExpr {
-                    list { atom("red"); atom(obj.red.toString()) }
-                    list { atom("green"); atom(obj.green.toString()) }
-                    list { atom("blue"); atom(obj.blue.toString()) }
+                    atom(obj.red.toString())
+                    atom(obj.green.toString())
+                    atom(obj.blue.toString())
                 }
 
                 override fun fromSExpr(expr: SExpr): Color = expr.requireList().let { list ->
-                    fun field(index: Int, name: String) = list.exprs[index].requireList().let {
-                        require(it.exprs[0].requireAtom().asString() == name)
-                        it.exprs[1].requireAtom().asString().toInt()
-                    }
-                    Color(field(0, "red"), field(1, "green"), field(2, "blue"))
+                    fun field(index: Int) = list.exprs[index].requireAtom().asString().toInt()
+                    Color(field(0), field(1), field(2))
 
                 }
             })
         }
         val color = Color(10, 20, 30)
-        mappers.toSExpr(color).let { s ->
-            val u = mappers.fromSExpr<Color>(s)
-            require(u.red == color.red)
-            require(u.green == color.green)
-            require(u.blue == color.blue)
+        mappers.fromSExpr<Color>(mappers.toSExpr(color)).apply {
+            require(red == color.red)
+            require(green == color.green)
+            require(blue == color.blue)
         }
     }
 
