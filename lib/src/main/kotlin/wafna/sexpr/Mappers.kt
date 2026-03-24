@@ -8,6 +8,9 @@ import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.typeOf
 import java.lang.reflect.Method
 
+/**
+ * Converts objects to and from s-expressions (not strings or bytes).
+ */
 interface Mapper<T> {
     fun toSExpr(obj: T): SExpr
     fun fromSExpr(expr: SExpr): T
