@@ -74,9 +74,9 @@ class TestSerdes {
     }
     @Test
     fun nullables() {
-        Serdes {
-            register<Nullables>()
-        }.testObject(nullables)
+        Serdes { register<Nullables>() }
+            .testObject(Nullables(null, null, null))
+            .testObject(Nullables("foo", 42, PI))
     }
     @Test
     fun list() {
@@ -105,12 +105,11 @@ class TestSerdes {
     }
 
     companion object {
-        inline fun <reified T> Serdes.testObject(obj: T) {
+        inline fun <reified T> Serdes.testObject(obj: T): Serdes = apply {
             val expr = toSExpr(obj)
             assertEquals(obj, fromSExpr(expr))
         }
 
-        val nullables = Nullables(null, null, null)
         val primitivesOnly = PrimitivesOnly(
             name = "foo",
             count = 42,
