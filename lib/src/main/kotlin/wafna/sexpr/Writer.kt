@@ -4,12 +4,12 @@ import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 
 enum class DataFormat {
-    Compact, Readable
+    Canonical, Readable
 }
 
 class WriterSettings {
     var indent: Int? = null
-    var dataFormat: DataFormat = DataFormat.Compact
+    var dataFormat: DataFormat = DataFormat.Canonical
 }
 
 private const val lbracket = '['.code
@@ -76,7 +76,7 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
 
     fun node(s: SExpr, indent: Int) {
         fun doIndent() {
-            if (settings.dataFormat != DataFormat.Compact && null != settings.indent) {
+            if (settings.dataFormat != DataFormat.Canonical && null != settings.indent) {
                 stream.write(newLine)
                 repeat(indent) {
                     repeat(settings.indent!!) { stream.write(space) }
@@ -85,7 +85,7 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
         }
         when (s) {
             is SAtom -> when (settings.dataFormat) {
-                DataFormat.Compact -> writeBytes(s.data)
+                DataFormat.Canonical -> writeBytes(s.data)
                 DataFormat.Readable -> if (s.data.first().toInt().toChar().isJavaIdentifierStart() && s.data.drop(1)
                         .all { it.toInt().toChar().isJavaIdentifierPart() }
                 ) {
@@ -99,7 +99,7 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
                 doIndent()
                 stream.write(lbracket)
                 s.exprs.forEachIndexed { i, e ->
-                    if (settings.dataFormat != DataFormat.Compact)
+                    if (settings.dataFormat != DataFormat.Canonical)
                         if (0 < i) stream.write(space)
                         else doIndent()
                     node(e, indent + 1)
@@ -113,6 +113,9 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
     return stream
 }
 
+/**
+ * The canonical representation is RLE for all atoms and no whitespace.
+ */
 fun SExpr.canonicalize(settings: WriterSettings.() -> Unit = {}): String {
     ByteArrayOutputStream().use {
         write(it, settings)
