@@ -34,10 +34,12 @@ data class NestedObjects(
 )
 
 sealed interface Sealed {
-    data class Sealed1(val int: Int) : Sealed
-    data class Sealed2(val string: String) : Sealed
-    data class Sealed3(val double: Double) : Sealed
+    data class Sealed1(val sealed1: Int) : Sealed
+    data class Sealed2(val sealed2: String) : Sealed
+    data class Sealed3(val sealed3: Double) : Sealed
 }
+
+data class SealedContainer(val sealed: Sealed)
 
 class TestSerdes {
     @Test
@@ -113,15 +115,20 @@ class TestSerdes {
     fun sealedDataClasses() {
         Serdes {
             register<Sealed>()
+            register<SealedContainer>()
         }
             .testObject(Sealed.Sealed1(42))
             .testObject(Sealed.Sealed2("42"))
             .testObject(Sealed.Sealed3(42.0))
+            .testObject(SealedContainer(Sealed.Sealed1(42)))
+            .testObject(SealedContainer(Sealed.Sealed2("42")))
+            .testObject(SealedContainer(Sealed.Sealed3(42.0)))
     }
 
     companion object {
         inline fun <reified T> Serdes.testObject(obj: T): Serdes = apply {
             val expr = toSExpr(obj)
+            println(expr.showSExpr())
             assertEquals(obj, fromSExpr(expr))
         }
 

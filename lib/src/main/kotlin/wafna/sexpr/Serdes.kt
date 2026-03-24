@@ -148,13 +148,13 @@ class Serdes private constructor() {
                 kClass.sealedSubclasses.forEach { subClass ->
                     val adapter = createDataAdapter(subClass)
                     adapters[subClass] = adapter
-                    put(subClass.qualifiedName!!, adapter)
+                    put(subClass.simpleName!!, adapter)
                 }
             }
             adapters[kClass] = object : Adapter<T>() {
-                override fun implTo(obj: T): SExpr = buildSExpr{
+                override fun implTo(obj: T): SExpr = buildSExpr {
                     val objClass = obj::class
-                    val typeName = objClass.qualifiedName!!
+                    val typeName = objClass.simpleName!!
                     atom(typeName)
                     any(typeAdapters.getValue(typeName).toSExpr(obj))
                 }
