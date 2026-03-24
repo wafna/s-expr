@@ -123,7 +123,11 @@ class Serdes private constructor() {
                 }
             }
 
-            else -> error("Unsupported adapter type ${kClass.qualifiedName}${adapters.toList().joinToString { "\n\t${it.first}" }}")
+            else -> error(
+                "Unsupported adapter type ${kClass.qualifiedName}${
+                    adapters.toList().joinToString { "\n\t${it.first}" }
+                }"
+            )
         }
     }
 
@@ -131,7 +135,45 @@ class Serdes private constructor() {
     internal fun <T : Any> register(kType: KType) {
         @Suppress("UNCHECKED_CAST")
         val kClass = kType.classifier as KClass<T>
-        require(kClass.isData) { "${kClass.qualifiedName} is not a data class" }
+        if (kClass.isData) {
+            adapters[kClass] = createDataAdapter(kClass)
+        } else if (kClass.isSealed) {
+            // One level sealed hierarchy of data classes.
+            kClass.sealedSubclasses.filter { !it.isData }.run {
+                require(isEmpty()) {
+                    "Sealed class must contain only data classes: ${joinToString(", ") { it.qualifiedName.toString() }}"
+                }
+            }
+            val typeAdapters = buildMap {
+                kClass.sealedSubclasses.forEach { subClass ->
+                    val adapter = createDataAdapter(subClass)
+                    adapters[subClass] = adapter
+                    put(subClass.qualifiedName!!, adapter)
+                }
+            }
+            adapters[kClass] = object : Adapter<T>() {
+                override fun implTo(obj: T): SExpr = buildSExpr{
+                    val objClass = obj::class
+                    val typeName = objClass.qualifiedName!!
+                    atom(typeName)
+                    any(typeAdapters.getValue(typeName).toSExpr(obj))
+                }
+
+                override fun implFrom(expr: SExpr): T {
+                    val items = expr.requireList().exprs
+                    val type = items[0].requireAtom().asString()
+                    val adapter = typeAdapters.getValue(type)
+                    @Suppress("UNCHECKED_CAST")
+                    return adapter.fromSExpr(items[1].requireList()) as T
+                }
+            }
+        } else {
+            error("Data class or sealed class required.")
+        }
+    }
+
+    private fun <T : Any> createDataAdapter(kClass: KClass<T>): Adapter<T> {
+        require(kClass.isData) { "Data class required: $kClass" }
         // Assume a one-to-one correspondence between the ctor and the object properties.
         val ctor = kClass.primaryConstructor ?: error("No primary constructor found for ${kClass.qualifiedName}")
         // Cache some lookups for fast serialization, below.
@@ -143,7 +185,7 @@ class Serdes private constructor() {
         }
         val propertiesByName = kClass.memberProperties.associateBy { it.name }
         val paramsByName = ctor.parameters.associateBy { it.name }
-        adapters[kClass] = object : Adapter<T>() {
+        return object : Adapter<T>() {
             override fun implTo(obj: T): SExpr = buildSExpr {
                 adaptersByName.forEach { (name, adapter) ->
                     list {

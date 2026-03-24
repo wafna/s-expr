@@ -33,6 +33,12 @@ data class NestedObjects(
     val listsOfPrimitives: ListsOfPrimitives
 )
 
+sealed interface Sealed {
+    data class Sealed1(val int: Int) : Sealed
+    data class Sealed2(val string: String) : Sealed
+    data class Sealed3(val double: Double) : Sealed
+}
+
 class TestSerdes {
     @Test
     fun primitives() {
@@ -102,6 +108,15 @@ class TestSerdes {
         assertThrows<Throwable> {
             Serdes().testObject(arrayOf(1, 2, 3, 4))
         }
+    }
+    @Test
+    fun sealedDataClasses() {
+        Serdes {
+            register<Sealed>()
+        }
+            .testObject(Sealed.Sealed1(42))
+            .testObject(Sealed.Sealed2("42"))
+            .testObject(Sealed.Sealed3(42.0))
     }
 
     companion object {
