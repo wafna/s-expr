@@ -1,6 +1,7 @@
 package wafna.sexpr
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import java.io.ByteArrayOutputStream
 
 class TestWriter {
@@ -24,5 +25,10 @@ class TestWriter {
             list { atom("a"); atom("b") }
             list { atom("c"); atom("d") }
         }
+    }
+    @Test
+    fun testShow() {
+        val s = buildSExpr { atom("a"); atom("b") }
+        assertEquals("[1:a1:b]", s.showSExpr())
     }
 }
