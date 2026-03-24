@@ -218,6 +218,7 @@ class Mappers private constructor() {
         val paramsByName = ctor.parameters.associateBy { it.name }
         return object : Adapter<T>() {
             override fun toSExpr(obj: T): SExpr = buildSExpr {
+                println("toSExpr: $kClass")
                 adaptersByName.forEach { (name, adapter) ->
                     list {
                         atom(name.toByteArray(Charsets.UTF_8))
@@ -231,13 +232,14 @@ class Mappers private constructor() {
             }
 
             override fun fromSExpr(expr: SExpr): T = expr.requireList().run {
+                println("fromSExpr: $kClass")
                 ctor.callBy(buildMap {
                     exprs.forEach { expr ->
                         val list = expr.requireList().exprs
                         require(2 == list.size) { "Malformed value entry: ${list.size}" }
                         val name = list[0].requireAtom().asString()
-                        val param = paramsByName[name] ?: error("Unknown param $name")
-                        val adapter = adaptersByName[name] ?: error("Unknown param $name")
+                        val param = paramsByName[name] ?: error("Unknown param $name on $kClass")
+                        val adapter = adaptersByName[name] ?: error("Unknown param $name on $kClass")
                         val s = adapter.safeFrom(list[1])
                         put(param, s)
                     }
