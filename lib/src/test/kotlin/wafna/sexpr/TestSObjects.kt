@@ -30,19 +30,19 @@ data class NestedObjects(
 class TestSObjects {
     @Test
     fun primitives() {
-        SObjects().apply {
+        SObjects {
             register<PrimitivesOnly>()
         }.testObject(PrimitivesOnly("foo", 42, PI))
     }
     @Test
     fun listsOfPrimitives() {
-        SObjects().apply {
+        SObjects {
             register<ListsOfPrimitives>()
         }.testObject(listsOfPrimitives)
     }
     @Test
     fun listsOfListsOfPrimitives() {
-        SObjects().apply {
+        SObjects {
             register<ListOfListOfPrimitives>()
         }.testObject(
             ListOfListOfPrimitives(
@@ -55,7 +55,7 @@ class TestSObjects {
     }
     @Test
     fun nestedObjects() {
-        SObjects().apply {
+        SObjects {
             register<PrimitivesOnly>()
             register<ListsOfPrimitives>()
             register<NestedObjects>()
@@ -69,7 +69,7 @@ class TestSObjects {
     @Test
     fun list() {
         SObjects().testObject(listOf(1, 2, 3))
-        SObjects().apply { register<PrimitivesOnly>() }
+        SObjects { register<PrimitivesOnly>() }
             .testObject(List(4) { PrimitivesOnly("foo", 42, PI) })
     }
     @Test

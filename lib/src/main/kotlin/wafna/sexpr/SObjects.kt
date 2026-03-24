@@ -21,47 +21,62 @@ private interface Adapter<T> {
 }
 
 /**
+ * Exposes initialization to clients.
+ */
+class SObjectsRegistrar internal constructor(val sObjects: SObjects) {
+    /**
+     * Create an adapter for a data class.
+     * This class may now appear in supported collections.
+     */
+    inline fun <reified T : Any> register() = sObjects.register<T>(typeOf<T>())
+}
+
+/**
  * A collection of adapters for translating objects to and from s-expressions.
  * Create an instance, register data classes, invoke toSExpr and fromSExpr.
  * Primitives, (registered) data classes, and pairs, maps, sets, and lists thereof are handled.
  */
-class SObjects {
-    private val adapters = mutableMapOf<Class<*>, Adapter<*>>().apply {
-        // Add all the primitive adapters.
-        put(Byte::class.java, object : Adapter<Byte> {
+class SObjects private constructor() {
+
+    private val adapters = mutableMapOf<Class<*>, Adapter<*>>(
+        // Primitive adapters.
+        // Collection types are build on the fly, below.
+        Byte::class.java to object : Adapter<Byte> {
             override fun toSExpr(obj: Byte): SExpr = SAtom(ByteArray(1).also { it[0] = obj })
             override fun fromSExpr(expr: SExpr): Byte = expr.requireAtom().data[0]
-        })
-        put(Char::class.java, object : Adapter<Char> {
+        },
+        Char::class.java to object : Adapter<Char> {
             override fun toSExpr(obj: Char): SExpr = SAtom(ByteArray(1).also { it[0] = obj.code.toByte() })
             override fun fromSExpr(expr: SExpr): Char = expr.requireAtom().data[0].toInt().toChar()
-        })
-        put(String::class.java, object : Adapter<String> {
+        },
+        String::class.java to object : Adapter<String> {
             override fun toSExpr(obj: String): SExpr = SAtom(obj.toByteArray())
             override fun fromSExpr(expr: SExpr): String = expr.requireAtom().asName()
-        })
-        put(Boolean::class.java, object : Adapter<Boolean> {
+        },
+        Boolean::class.java to object : Adapter<Boolean> {
             override fun toSExpr(obj: Boolean): SExpr = SAtom(obj.toString().toByteArray())
             override fun fromSExpr(expr: SExpr): Boolean =
                 expr.requireAtom().asName().run { toBooleanStrictOrNull() ?: error("Expected Boolean, got $this.") }
-        })
-        put(Int::class.java, object : Adapter<Int> {
+        },
+        Int::class.java to object : Adapter<Int> {
             override fun toSExpr(obj: Int): SExpr = SAtom(obj.toString().toByteArray())
             override fun fromSExpr(expr: SExpr): Int =
                 expr.requireAtom().asName().run { toIntOrNull() ?: error("Expected Int, got $this.") }
-        })
-        put(Long::class.java, object : Adapter<Long> {
+        },
+        Long::class.java to object : Adapter<Long> {
             override fun toSExpr(obj: Long): SExpr = SAtom(obj.toString().toByteArray())
             override fun fromSExpr(expr: SExpr): Long =
                 expr.requireAtom().asName().run { toLongOrNull() ?: error("Expected Long, got $this") }
-        })
-        put(Double::class.java, object : Adapter<Double> {
+        },
+        Double::class.java to object : Adapter<Double> {
             override fun toSExpr(obj: Double): SExpr = SAtom(obj.toString().toByteArray())
             override fun fromSExpr(expr: SExpr): Double =
                 expr.requireAtom().asName().run { toDoubleOrNull() ?: error("Expected Double, got $this") }
-        })
-    }
+        }
+    )
 
+    // Find an adapter for this type or die in the attempt.
+    // This includes building adapters for parameterized types using their (reified) type arguments.
     private fun adapter(kType: KType): Adapter<*> {
         val kClass = kType.classifier as KClass<*>
         return adapters[kClass.java] ?: when (kClass) {
@@ -102,12 +117,6 @@ class SObjects {
             else -> error("Unsupported adapter type $kClass")
         }
     }
-
-    /**
-     * Create an adapter for a data class.
-     * This class may now appear in supported collections.
-     */
-    inline fun <reified T : Any> register() = register<T>(typeOf<T>())
 
     @PublishedApi
     internal fun <T : Any> register(kType: KType) {
@@ -178,13 +187,11 @@ class SObjects {
         }
     }
 
-    private fun <T> toList(itemType: KType, expr: SList): T {
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> toList(itemType: KType, expr: SList): T = buildList {
         val adapter = adapter(itemType)
-        @Suppress("UNCHECKED_CAST")
-        return buildList {
-            expr.requireList().exprs.forEach { add(adapter.invokeFrom(it)) }
-        } as T
-    }
+        expr.requireList().exprs.forEach { add(adapter.invokeFrom(it)) }
+    } as T
 
     private fun fromSet(itemType: KType, obj: Set<*>): SList {
         val adapter = adapter(itemType)
@@ -193,13 +200,11 @@ class SObjects {
         }
     }
 
-    private fun <T> toSet(itemType: KType, expr: SList): T {
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> toSet(itemType: KType, expr: SList): T = buildSet {
         val adapter = adapter(itemType)
-        @Suppress("UNCHECKED_CAST")
-        return buildSet {
-            expr.requireList().exprs.forEach { add(adapter.invokeFrom(it)) }
-        } as T
-    }
+        expr.requireList().exprs.forEach { add(adapter.invokeFrom(it)) }
+    } as T
 
     private fun fromPair(type1: KType, type2: KType, obj: Pair<*, *>): SList = buildSExpr {
         any(adapter(type1).invokeTo(obj.first))
@@ -230,12 +235,18 @@ class SObjects {
             val e = it.requireList().exprs
             val p = a1.invokeFrom(e[0])
             val q = a2.invokeFrom(e[1])
-            @Suppress("UNCHECKED_CAST")
             put(p, q)
         }
     } as T
 
     companion object {
+
+        /**
+         * Pseudo ctor with initializer function.
+         */
+        operator fun invoke(initializer: SObjectsRegistrar.() -> Unit = {}): SObjects = SObjects().apply {
+            SObjectsRegistrar(this).initializer()
+        }
 
         private fun SExpr.requireList(msg: String = "Expected list."): SList = when (this) {
             is SAtom -> error(msg)
