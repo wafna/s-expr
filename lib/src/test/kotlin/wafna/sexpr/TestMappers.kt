@@ -54,22 +54,22 @@ enum class EnumP(val x: Int) {
 
 data class EnumContainerP(val enumP: EnumP)
 
-class TestSerdes {
+class TestMappers {
     @Test
     fun primitives() {
-        Serdes {
+        Mappers {
             register<PrimitivesOnly>()
         }.testObject(PrimitivesOnly("foo", 42, PI))
     }
     @Test
     fun listsOfPrimitives() {
-        Serdes {
+        Mappers {
             register<ListsOfPrimitives>()
         }.testObject(listsOfPrimitives)
     }
     @Test
     fun listsOfListsOfPrimitives() {
-        Serdes {
+        Mappers {
             register<ListOfListOfPrimitives>()
         }.testObject(
             ListOfListOfPrimitives(
@@ -82,7 +82,7 @@ class TestSerdes {
     }
     @Test
     fun nestedObjects() {
-        Serdes {
+        Mappers {
             register<PrimitivesOnly>()
             register<ListsOfPrimitives>()
             register<NestedObjects>()
@@ -95,39 +95,39 @@ class TestSerdes {
     }
     @Test
     fun nullables() {
-        Serdes { register<Nullables>() }
+        Mappers { register<Nullables>() }
             .testObject(Nullables(null, null, null))
             .testObject(Nullables("foo", 42, PI))
     }
     @Test
     fun list() {
-        Serdes().testObject(listOf(1, 2, 3))
-        Serdes().testObject(List(3) { x -> List(3) { y -> x + y } })
-        Serdes { register<PrimitivesOnly>() }
+        Mappers().testObject(listOf(1, 2, 3))
+        Mappers().testObject(List(3) { x -> List(3) { y -> x + y } })
+        Mappers { register<PrimitivesOnly>() }
             .testObject(List(4) { PrimitivesOnly("$it", it, it.toDouble()) })
     }
     @Test
     fun set() {
-        Serdes().testObject(setOf(1, 2, 3))
+        Mappers().testObject(setOf(1, 2, 3))
     }
     @Test
     fun pair() {
-        Serdes().testObject(9 to 5)
-        Serdes().testObject("positions" to listOf(1, 2, 3))
+        Mappers().testObject(9 to 5)
+        Mappers().testObject("positions" to listOf(1, 2, 3))
     }
     @Test
     fun map() {
-        Serdes().testObject(mapOf(1 to 2, 3 to 4))
+        Mappers().testObject(mapOf(1 to 2, 3 to 4))
     }
     @Test
     fun arrayNotSupported() {
         assertThrows<Throwable> {
-            Serdes().testObject(arrayOf(1, 2, 3, 4))
+            Mappers().testObject(arrayOf(1, 2, 3, 4))
         }
     }
     @Test
     fun sealedDataClasses() {
-        Serdes {
+        Mappers {
             register<Sealed>()
             register<SealedContainer>()
         }
@@ -140,7 +140,7 @@ class TestSerdes {
     }
     @Test
     fun enumC() {
-        Serdes {
+        Mappers {
             register<EnumC>()
             register<EnumContainerC>()
         }.apply {
@@ -150,7 +150,7 @@ class TestSerdes {
     }
     @Test
     fun enumP() {
-        Serdes {
+        Mappers {
             register<EnumP>()
             register<EnumContainerP>()
         }.apply {
@@ -160,27 +160,27 @@ class TestSerdes {
     }
     @Test
     fun custom() {
-        val serdes = Serdes {
-            serde(object : Serde<Color> {
-                override fun toSExpr(obj: Color): SExpr = buildSExpr{
+        val mappers = Mappers {
+            register(object : Mapper<Color> {
+                override fun toSExpr(obj: Color): SExpr = buildSExpr {
                     list { atom("red"); atom(obj.red.toString()) }
                     list { atom("green"); atom(obj.green.toString()) }
                     list { atom("blue"); atom(obj.blue.toString()) }
                 }
 
-                override fun fromSExpr(expr: SExpr): Color = buildMap {
-                    expr.requireList().exprs.forEach { e ->
-                        val (name, color) = e.requireList().exprs
-                        put(name.requireAtom().asString(), color.requireAtom().asString().toInt())
+                override fun fromSExpr(expr: SExpr): Color = expr.requireList().let { list ->
+                    fun field(index: Int, name: String) = list.exprs[index].requireList().let {
+                        require(it.exprs[0].requireAtom().asString() == name)
+                        it.exprs[1].requireAtom().asString().toInt()
                     }
-                }.let {
-                    Color(it.getValue("red"), it.getValue("green"), it.getValue("blue"))
+                    Color(field(0, "red"), field(1, "green"), field(2, "blue"))
+
                 }
             })
         }
         val color = Color(10, 20, 30)
-        serdes.toSExpr(color).let { s ->
-            val u = serdes.fromSExpr<Color>(s)
+        mappers.toSExpr(color).let { s ->
+            val u = mappers.fromSExpr<Color>(s)
             require(u.red == color.red)
             require(u.green == color.green)
             require(u.blue == color.blue)
@@ -188,7 +188,7 @@ class TestSerdes {
     }
 
     companion object {
-        inline fun <reified T> Serdes.testObject(expected: T): Serdes = apply {
+        inline fun <reified T> Mappers.testObject(expected: T): Mappers = apply {
             val expr = toSExpr(expected)
             // println(expr.showSExpr())
             val actual = fromSExpr<T>(expr)

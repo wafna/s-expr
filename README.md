@@ -28,7 +28,39 @@ Serialize data classes and collections using s-expressions.
 
 **Sealed data hierarchies**
 
+Single level only.
+```kotlin
+sealed interface Sealed {
+    data class Sealed1(val sealed1: Int) : Sealed
+    data class Sealed2(val sealed2: String) : Sealed
+    data class Sealed3(val sealed3: Double) : Sealed
+}
+```
+
 **Enums**
+
+**Custom Mappers**
+
+```kotlin
+Serdes {
+    register(object : Serde<Color> {
+        override fun toSExpr(obj: Color): SExpr = buildSExpr {
+            list { atom("red"); atom(obj.red.toString()) }
+            list { atom("green"); atom(obj.green.toString()) }
+            list { atom("blue"); atom(obj.blue.toString()) }
+        }
+
+        override fun fromSExpr(expr: SExpr): Color = expr.requireList().let { list ->
+            fun field(index: Int, name: String) = list.exprs[index].requireList().let {
+                require(it.exprs[0].requireAtom().asString() == name)
+                it.exprs[1].requireAtom().asString().toInt()
+            }
+            Color(field(0, "red"), field(1, "green"), field(2, "blue"))
+
+        }
+    })
+}
+```
 
 ```kotlin
 data class Thing(val id: Int, val name: String)

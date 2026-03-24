@@ -8,7 +8,7 @@ import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.typeOf
 import java.lang.reflect.Method
 
-interface Serde<T> {
+interface Mapper<T> {
     fun toSExpr(obj: T): SExpr
     fun fromSExpr(expr: SExpr): T
 }
@@ -18,7 +18,7 @@ interface Serde<T> {
  * The "actual" methods intercept NULLs, then defer to the "impl" methods.
  * It would be nice to make the actual methods private, as well, but they seem to become invisible to reflection.
  */
-private abstract class SerdeAdapter<T> : Serde<T> {
+private abstract class Adapter<T> : Mapper<T> {
     @Suppress("unused")
     fun actualTo(obj: T?): SExpr = obj?.let { toSExpr(it) } ?: SAtom.NULL
     @Suppress("unused")
@@ -32,25 +32,18 @@ private abstract class SerdeAdapter<T> : Serde<T> {
 
     fun safeTo(obj: Any?): SExpr = fnTo(this, obj) as SExpr
     fun safeFrom(expr: SExpr): Any? = fnFrom(this, expr)
-
-    companion object {
-        fun <T> from(serde: Serde<T>): SerdeAdapter<T> = object : SerdeAdapter<T>() {
-            override fun toSExpr(obj: T): SExpr = serde.toSExpr(obj)
-            override fun fromSExpr(expr: SExpr): T = serde.fromSExpr(expr)
-        }
-    }
 }
 
 /**
  * Exposes initialization to clients.
  */
-class SerdeRegistry internal constructor(val serdes: Serdes) {
+class MapperRegistry internal constructor(val mappers: Mappers) {
     /**
      * Create an adapter for a data class.
      * This data class may now appear in supported collections and as members in other data classes.
      */
-    inline fun <reified T : Any> register() = serdes.register<T>(typeOf<T>())
-    inline fun <reified T: Any> serde(serde: Serde<T>) = serdes.serde(typeOf<T>(), serde)
+    inline fun <reified T : Any> register() = mappers.register<T>(typeOf<T>())
+    inline fun <reified T: Any> register(mapper: Mapper<T>) = mappers.adapt(typeOf<T>(), mapper)
 }
 
 /**
@@ -58,39 +51,39 @@ class SerdeRegistry internal constructor(val serdes: Serdes) {
  * Create an instance, register data classes, invoke toSExpr and fromSExpr.
  * Primitives, (registered) data classes, and pairs, maps, sets, and lists thereof are handled.
  */
-class Serdes private constructor() {
+class Mappers private constructor() {
 
-    private val adapters = mutableMapOf<KClass<*>, SerdeAdapter<*>>(
+    private val adapters = mutableMapOf<KClass<*>, Adapter<*>>(
         // Primitive adapters.
         // Collection types are built on the fly, below.
-        Byte::class to object : SerdeAdapter<Byte>() {
+        Byte::class to object : Adapter<Byte>() {
             override fun toSExpr(obj: Byte): SExpr = SAtom(ByteArray(1).also { it[0] = obj })
             override fun fromSExpr(expr: SExpr): Byte = expr.requireAtom().data[0]
         },
-        Char::class to object : SerdeAdapter<Char>() {
+        Char::class to object : Adapter<Char>() {
             override fun toSExpr(obj: Char): SExpr = SAtom(ByteArray(1).also { it[0] = obj.code.toByte() })
             override fun fromSExpr(expr: SExpr): Char = expr.requireAtom().data[0].toInt().toChar()
         },
-        String::class to object : SerdeAdapter<String>() {
+        String::class to object : Adapter<String>() {
             override fun toSExpr(obj: String): SExpr = SAtom(obj.toByteArray())
             override fun fromSExpr(expr: SExpr): String = expr.requireAtom().asString()
         },
-        Boolean::class to object : SerdeAdapter<Boolean>() {
+        Boolean::class to object : Adapter<Boolean>() {
             override fun toSExpr(obj: Boolean): SExpr = SAtom(obj.toString().toByteArray())
             override fun fromSExpr(expr: SExpr): Boolean =
                 expr.requireAtom().asString().run { toBooleanStrictOrNull() ?: error("Expected Boolean, got $this.") }
         },
-        Int::class to object : SerdeAdapter<Int>() {
+        Int::class to object : Adapter<Int>() {
             override fun toSExpr(obj: Int): SExpr = SAtom(obj.toString().toByteArray())
             override fun fromSExpr(expr: SExpr): Int =
                 expr.requireAtom().asString().run { toIntOrNull() ?: error("Expected Int, got $this.") }
         },
-        Long::class to object : SerdeAdapter<Long>() {
+        Long::class to object : Adapter<Long>() {
             override fun toSExpr(obj: Long): SExpr = SAtom(obj.toString().toByteArray())
             override fun fromSExpr(expr: SExpr): Long =
                 expr.requireAtom().asString().run { toLongOrNull() ?: error("Expected Long, got $this") }
         },
-        Double::class to object : SerdeAdapter<Double>() {
+        Double::class to object : Adapter<Double>() {
             override fun toSExpr(obj: Double): SExpr = SAtom(obj.toString().toByteArray())
             override fun fromSExpr(expr: SExpr): Double =
                 expr.requireAtom().asString().run { toDoubleOrNull() ?: error("Expected Double, got $this") }
@@ -99,12 +92,12 @@ class Serdes private constructor() {
 
     // Find an adapter for this type or die in the attempt.
     // This includes building adapters for parameterized types using their (reified) type arguments.
-    private fun adapterFor(kType: KType): SerdeAdapter<*> {
+    private fun adapterFor(kType: KType): Adapter<*> {
         val kClass = kType.classifier as KClass<*>
         return adapters[kClass] ?: when (kClass) {
             List::class -> {
                 val itemType = kType.arguments.first().type!!
-                object : SerdeAdapter<List<*>>() {
+                object : Adapter<List<*>>() {
                     override fun toSExpr(obj: List<*>): SExpr = fromList(itemType, obj)
                     override fun fromSExpr(expr: SExpr): List<*> = toList(itemType, expr.requireList())
                 }
@@ -112,7 +105,7 @@ class Serdes private constructor() {
 
             Set::class -> {
                 val itemType = kType.arguments.first().type!!
-                object : SerdeAdapter<Set<*>>() {
+                object : Adapter<Set<*>>() {
                     override fun toSExpr(obj: Set<*>): SExpr = fromSet(itemType, obj)
                     override fun fromSExpr(expr: SExpr): Set<*> = toSet(itemType, expr.requireList())
                 }
@@ -121,7 +114,7 @@ class Serdes private constructor() {
             Pair::class -> {
                 val type1 = kType.arguments[0].type!!
                 val type2 = kType.arguments[1].type!!
-                object : SerdeAdapter<Pair<*, *>>() {
+                object : Adapter<Pair<*, *>>() {
                     override fun toSExpr(obj: Pair<*, *>): SExpr = fromPair(type1, type2, obj)
                     override fun fromSExpr(expr: SExpr): Pair<*, *> = toPair(type1, type2, expr.requireList())
                 }
@@ -130,7 +123,7 @@ class Serdes private constructor() {
             Map::class -> {
                 val type1 = kType.arguments[0].type!!
                 val type2 = kType.arguments[1].type!!
-                object : SerdeAdapter<Map<*, *>>() {
+                object : Adapter<Map<*, *>>() {
                     override fun toSExpr(obj: Map<*, *>): SExpr = fromMap(type1, type2, obj)
                     override fun fromSExpr(expr: SExpr): Map<*, *> = toMap(type1, type2, expr.requireList())
                 }
@@ -145,10 +138,13 @@ class Serdes private constructor() {
     }
 
     @PublishedApi
-    internal fun <T : Any> serde(kType: KType, serde: Serde<T>) {
+    internal fun <T : Any> adapt(kType: KType, mapper: Mapper<T>) {
         @Suppress("UNCHECKED_CAST")
         val kClass = kType.classifier as KClass<T>
-        adapters[kClass] = SerdeAdapter.from(serde)
+        adapters[kClass] = object : Adapter<T>() {
+            override fun toSExpr(obj: T): SExpr = mapper.toSExpr(obj)
+            override fun fromSExpr(expr: SExpr): T = mapper.fromSExpr(expr)
+        }
     }
 
     @PublishedApi
@@ -171,7 +167,7 @@ class Serdes private constructor() {
                     put(subClass.simpleName!!, adapter)
                 }
             }
-            adapters[kClass] = object : SerdeAdapter<T>() {
+            adapters[kClass] = object : Adapter<T>() {
                 override fun toSExpr(obj: T): SExpr = buildSExpr {
                     val objClass = obj::class
                     val typeName = objClass.simpleName!!
@@ -193,7 +189,7 @@ class Serdes private constructor() {
                     put(it.toString(), it)
                 }
             }
-            adapters[kClass] = object : SerdeAdapter<T>() {
+            adapters[kClass] = object : Adapter<T>() {
                 override fun toSExpr(obj: T): SExpr =
                     SAtom(obj.toString().toByteArray())
 
@@ -205,12 +201,12 @@ class Serdes private constructor() {
         }
     }
 
-    private fun <T : Any> createDataAdapter(kClass: KClass<T>): SerdeAdapter<T> {
+    private fun <T : Any> createDataAdapter(kClass: KClass<T>): Adapter<T> {
         require(kClass.isData) { "Data class required: $kClass" }
         // Assume a one-to-one correspondence between the ctor and the object properties.
         val ctor = kClass.primaryConstructor ?: error("No primary constructor found for ${kClass.qualifiedName}")
         // Cache some lookups for fast serialization, below.
-        val adaptersByName: Map<String, SerdeAdapter<*>> = buildMap {
+        val adaptersByName: Map<String, Adapter<*>> = buildMap {
             ctor.parameters.forEach { param ->
                 require(!param.isVararg) { "Varargs not supported." }
                 put(param.name!!, adapterFor(param.type))
@@ -218,7 +214,7 @@ class Serdes private constructor() {
         }
         val propertiesByName = kClass.memberProperties.associateBy { it.name }
         val paramsByName = ctor.parameters.associateBy { it.name }
-        return object : SerdeAdapter<T>() {
+        return object : Adapter<T>() {
             override fun toSExpr(obj: T): SExpr = buildSExpr {
                 adaptersByName.forEach { (name, adapter) ->
                     list {
@@ -330,8 +326,8 @@ class Serdes private constructor() {
         /**
          * Pseudo ctor with initializer function.
          */
-        operator fun invoke(initializer: SerdeRegistry.() -> Unit = {}): Serdes = Serdes().apply {
-            SerdeRegistry(this).initializer()
+        operator fun invoke(initializer: MapperRegistry.() -> Unit = {}): Mappers = Mappers().apply {
+            MapperRegistry(this).initializer()
         }
     }
 }
