@@ -42,8 +42,8 @@ sealed interface Sealed {
 **Custom Mappers**
 
 ```kotlin
-Serdes {
-    register(object : Serde<Color> {
+Mappers {
+    register(object : Mapper<Color> {
         override fun toSExpr(obj: Color): SExpr = buildSExpr {
             list { atom("red"); atom(obj.red.toString()) }
             list { atom("green"); atom(obj.green.toString()) }
