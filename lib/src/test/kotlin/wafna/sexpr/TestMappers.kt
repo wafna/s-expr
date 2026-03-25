@@ -95,9 +95,10 @@ class TestMappers {
     }
     @Test
     fun nullables() {
-        Mappers { register<Nullables>() }
-            .testObject(Nullables(null, null, null))
-            .testObject(Nullables("foo", 42, PI))
+        Mappers { register<Nullables>() }.run {
+            testObject(Nullables(null, null, null))
+            testObject(Nullables("foo", 42, PI))
+        }
     }
     @Test
     fun list() {
@@ -130,13 +131,14 @@ class TestMappers {
         Mappers {
             register<Sealed>()
             register<SealedContainer>()
+        }.apply {
+            testObject(Sealed.Sealed1(42))
+            testObject(Sealed.Sealed2("42"))
+            testObject(Sealed.Sealed3(42.0))
+            testObject(SealedContainer(Sealed.Sealed1(42)))
+            testObject(SealedContainer(Sealed.Sealed2("42")))
+            testObject(SealedContainer(Sealed.Sealed3(42.0)))
         }
-            .testObject(Sealed.Sealed1(42))
-            .testObject(Sealed.Sealed2("42"))
-            .testObject(Sealed.Sealed3(42.0))
-            .testObject(SealedContainer(Sealed.Sealed1(42)))
-            .testObject(SealedContainer(Sealed.Sealed2("42")))
-            .testObject(SealedContainer(Sealed.Sealed3(42.0)))
     }
     @Test
     fun enumC() {
@@ -184,9 +186,8 @@ class TestMappers {
     }
 
     companion object {
-        inline fun <reified T> Mappers.testObject(expected: T): Mappers = apply {
+        inline fun <reified T> Mappers.testObject(expected: T) {
             val expr = toSExpr(expected)
-             println(expr.showSExpr())
             val actual = fromSExpr<T>(expr)
             assertEquals(expected, actual)
         }
