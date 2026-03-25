@@ -34,3 +34,10 @@ fun compareSExpr(actual: SExpr, expected: SExpr) {
     }
 }
 
+inline fun <reified T> Mappers.testObject(expected: T) {
+    val expr = toSExpr(expected)
+    //println(expr.showSExpr())
+    val actual = fromSExpr<T>(expr)
+    assertEquals(expected, actual)
+}
+

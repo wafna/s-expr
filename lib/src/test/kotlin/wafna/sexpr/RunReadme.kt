@@ -1,25 +1,11 @@
-# s-expr
+package wafna.sexpr
 
-S-expressions are the simplest possible data structure, 
-consisting solely of lists of other s-expressions and atoms, 
-which contain arrays of bytes.
-Importantly, there is no restriction on the values of the bytes.
-This makes the format extremely efficient for all forms of data, esp. binary.
+/*
+Sample code from the README
+*/
 
-This library is built for Kotlin and natively supports the List, Set, Pair, Map collection types as well as enums.
-There is also built-in support for multiple levels of sealed class hierarchies containing data classes. 
-
-For literal s-expressions, the parser recognizes bare words (C style identifiers), 
-double-quoted strings (C style strings), and run length encoded atoms. 
-This implementation uses square brackets instead of parentheses for literal s-expressions 
-to reduce strain on the shift key.
-
-## Quick Start
-
-Convert objects to s-expressions and back again using the ***mapping*** facility.
-
-```kotlin
 import java.awt.Color
+import java.util.*
 
 // Domain objects.
 
@@ -27,7 +13,7 @@ enum class Position {
     Center, Guard, Forward
 }
 
-data class Player(val number: Int, val position: Position)
+data class Player(val id: UUID, val number: Int, val position: Position)
 
 sealed interface Jersey {
     data class Home(val colors: List<Color>) : Jersey
@@ -53,15 +39,18 @@ val colorMapper = object : Mapper<Color> {
     }
 }
 
+val uuidMapper = object : Mapper<UUID> {
+    override fun toSExpr(obj: UUID): SExpr = SBytes(obj.toString().toByteArray(Charsets.UTF_8))
+    override fun fromSExpr(expr: SExpr): UUID = UUID.fromString(String(expr.requireBytes().data, Charsets.UTF_8))
+}
+
 // Register adapters in this "constructor" block.
 // Note: register dependent types before containing types.
 val mappers = Mappers {
-    // Register any enums to be used.
     register<Position>()
     register(colorMapper)
-    // Register data classes.
+    register(uuidMapper)
     register<Player>()
-    // Only the top of the sealed hierarchy is required.
     register<Jersey>()
     register<Team>()
 }
@@ -73,11 +62,11 @@ fun main() {
             Jersey.Away(listOf(Color.BLUE, Color.BLACK))
         ),
         players = listOf(
-            Player(42, Position.Center),
-            Player(11, Position.Guard),
-            Player(9, Position.Guard),
-            Player(14, Position.Forward),
-            Player(2, Position.Forward),
+            Player(UUID.randomUUID(), 42, Position.Center),
+            Player(UUID.randomUUID(), 11, Position.Guard),
+            Player(UUID.randomUUID(), 9, Position.Guard),
+            Player(UUID.randomUUID(), 14, Position.Forward),
+            Player(UUID.randomUUID(), 2, Position.Forward),
         )
     )
 
@@ -93,11 +82,3 @@ fun main() {
     val actualFromBytes = mappers.fromSExpr<Team>(readSExpr(CharStream.from(expr.showSExpr())))
     require(team == actualFromBytes)
 }
-```
-
-## Features
-
-* Built-in support for List, Set, Pair, and Map collection types.
-* Built-in support for multi-level sealed data class hierarchies.
-* Built-in support for enums.
-* Custom mappers.

@@ -72,22 +72,23 @@ fun readSExpr(input: CharStream, reader: Reader) {
 }
 
 fun SExpr.requireList(msg: String = "Expected list."): SList = when (this) {
-    is SAtom -> error(msg)
     is SList -> this
+    else -> error(msg)
 }
 
 fun SExpr.requireAtom(msg: String = "Expected atom."): SAtom = when (this) {
     is SAtom -> this
-    is SList -> error(msg)
+    else -> error(msg)
+}
+
+fun SExpr.requireBytes(msg: String = "Expected bytes."): SBytes = when (this) {
+    is SBytes -> this
+    else -> error(msg)
 }
 
 fun <T> SExpr.mapAtom(msg: String = "Expecting non-null atom.", f: SBytes.() -> T) = when (this) {
-    is SAtom -> when (this) {
-        is SNull -> null
-        is SBytes -> f(this)
-    }
-
-    is SList -> error(msg)
+    is  SBytes -> f(this)
+    else -> error(msg)
 }
 
 /**

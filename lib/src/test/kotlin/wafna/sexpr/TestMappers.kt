@@ -3,44 +3,35 @@ package wafna.sexpr
 import kotlin.math.E
 import kotlin.math.PI
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import org.junit.jupiter.api.assertThrows
 import java.awt.Color
 
-data class PrimitivesOnly(
+internal data class PrimitivesOnly(
     val name: String,
     val count: Int,
     val value: Double
 )
 
-data class Nullables(
+internal data class Nullables(
     val name: String?,
     val count: Int?,
     val value: Double?
 )
 
-data class ListsOfPrimitives(
+internal data class ListsOfPrimitives(
     val names: List<String>,
     val counts: List<Int>,
     val values: List<Double>
 )
 
-data class ListOfListOfPrimitives(
+internal data class ListOfListOfPrimitives(
     val groups: List<List<String>>
 )
 
-data class NestedObjects(
+internal data class NestedObjects(
     val primitivesOnly: PrimitivesOnly,
     val listsOfPrimitives: ListsOfPrimitives
 )
-
-sealed interface Sealed {
-    data class Sealed1(val sealed1: Int) : Sealed
-    data class Sealed2(val sealed2: String) : Sealed
-    data class Sealed3(val sealed3: Double) : Sealed
-}
-
-data class SealedContainer(val sealed: Sealed)
 
 enum class EnumC {
     Bing, Bang, Boom
@@ -127,20 +118,6 @@ class TestMappers {
         }
     }
     @Test
-    fun sealedDataClasses() {
-        Mappers {
-            register<Sealed>()
-            register<SealedContainer>()
-        }.apply {
-            testObject(Sealed.Sealed1(42))
-            testObject(Sealed.Sealed2("42"))
-            testObject(Sealed.Sealed3(42.0))
-            testObject(SealedContainer(Sealed.Sealed1(42)))
-            testObject(SealedContainer(Sealed.Sealed2("42")))
-            testObject(SealedContainer(Sealed.Sealed3(42.0)))
-        }
-    }
-    @Test
     fun enumC() {
         Mappers {
             register<EnumC>()
@@ -186,18 +163,12 @@ class TestMappers {
     }
 
     companion object {
-        inline fun <reified T> Mappers.testObject(expected: T) {
-            val expr = toSExpr(expected)
-            val actual = fromSExpr<T>(expr)
-            assertEquals(expected, actual)
-        }
-
-        val primitivesOnly = PrimitivesOnly(
+        internal val primitivesOnly = PrimitivesOnly(
             name = "foo",
             count = 42,
             value = PI
         )
-        val listsOfPrimitives = ListsOfPrimitives(
+        internal val listsOfPrimitives = ListsOfPrimitives(
             names = listOf("foo", "bar"),
             counts = listOf(1, 2, 3),
             values = listOf(PI, E)

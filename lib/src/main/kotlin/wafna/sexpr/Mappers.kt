@@ -179,48 +179,9 @@ class Mappers private constructor() {
         if (kClass.isData) {
             adapters[kClass] = createDataAdapter(kClass)
         } else if (kClass.isSealed) {
-            // One level sealed hierarchy of data classes.
-            kClass.sealedSubclasses.filter { !it.isData }.run {
-                require(isEmpty()) {
-                    "Sealed class must contain only data classes: ${joinToString(", ") { it.qualifiedName.toString() }}"
-                }
-            }
-            val typeAdapters = buildMap {
-                kClass.sealedSubclasses.forEach { subClass ->
-                    val adapter = createDataAdapter(subClass)
-                    adapters[subClass] = adapter
-                    put(subClass.simpleName!!, adapter)
-                }
-            }
-            adapters[kClass] = object : Adapter<T>() {
-                override fun toSExpr(obj: T): SExpr = buildSExpr {
-                    val objClass = obj::class
-                    val typeName = objClass.simpleName!!
-                    atom(typeName)
-                    expr(typeAdapters.getValue(typeName).proxyTo(obj))
-                }
-
-                override fun fromSExpr(expr: SExpr): T {
-                    val items = expr.requireList().exprs
-                    val type = items[0].mapAtom { asString() }!!
-                    val adapter = typeAdapters.getValue(type)
-                    @Suppress("UNCHECKED_CAST")
-                    return adapter.proxyFrom(items[1].requireList()) as T
-                }
-            }
+            registerSealed(kClass)
         } else if (kClass.isSubclassOf(Enum::class)) {
-            val byName = buildMap {
-                kClass.java.enumConstants.forEach {
-                    put(it.toString(), it)
-                }
-            }
-            adapters[kClass] = object : Adapter<T>() {
-                override fun toSExpr(obj: T): SExpr =
-                    SBytes(obj.toString().toByteArray())
-
-                override fun fromSExpr(expr: SExpr): T =
-                    byName.getValue(expr.mapAtom { asString() }!!) as T
-            }
+            registerEnum(kClass)
         } else {
             error("Data class or sealed class required.")
         }
@@ -266,6 +227,56 @@ class Mappers private constructor() {
                     }
                 })
             }
+        }
+    }
+
+    private fun registerSealed(kClass: KClass<*>) {
+        require(kClass.isSealed) { "${kClass.qualifiedName} is not a sealed class." }
+        val typeAdapters = buildMap {
+            kClass.sealedSubclasses.forEach { subClass ->
+                if (subClass.isData && !adapters.contains(subClass)) {
+                    val adapter = createDataAdapter(subClass)
+                    adapters[subClass] = adapter
+                    put(subClass.simpleName!!, adapter)
+                } else if (subClass.isSealed) {
+                    registerSealed(subClass)
+                } else {
+                    error("Only sealed and data classes allowed in hierarchy: ${subClass.qualifiedName}")
+                }
+            }
+        }
+        if (!adapters.contains(kClass)) {
+            adapters[kClass] = object : Adapter<Any>() {
+                override fun toSExpr(obj: Any): SExpr = buildSExpr {
+                    val objClass = obj::class
+                    val typeName = objClass.simpleName!!
+                    atom(typeName)
+                    expr(typeAdapters.getValue(typeName).proxyTo(obj))
+                }
+
+                override fun fromSExpr(expr: SExpr): Any {
+                    val items = expr.requireList().exprs
+                    val type = items[0].mapAtom { asString() }!!
+                    val adapter = typeAdapters.getValue(type)
+                    @Suppress("UNCHECKED_CAST")
+                    return adapter.proxyFrom(items[1].requireList()) as Any
+                }
+            }
+        }
+    }
+
+    private fun <T : Any> registerEnum(kClass: KClass<T>) {
+        val byName = buildMap {
+            kClass.java.enumConstants.forEach {
+                put(it.toString(), it)
+            }
+        }
+        adapters[kClass] = object : Adapter<T>() {
+            override fun toSExpr(obj: T): SExpr =
+                SBytes(obj.toString().toByteArray())
+
+            override fun fromSExpr(expr: SExpr): T =
+                byName.getValue(expr.mapAtom { asString() }!!) as T
         }
     }
 
