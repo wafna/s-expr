@@ -66,9 +66,7 @@ class Mappers private constructor() {
         },
         Char::class to object : Adapter<Char?>() {
             override fun toSExpr(obj: Char?): SExpr = obj?.let {
-                SBytes(ByteArray(1).also {
-                    it[0] = obj.code.toByte()
-                })
+                SBytes(ByteArray(1).also { it[0] = obj.code.toByte() })
             } ?: SNull
 
             override fun fromSExpr(expr: SExpr): Char? = expr.mapAtom { data[0].toInt().toChar() }
