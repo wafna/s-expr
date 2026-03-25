@@ -28,8 +28,10 @@ class TestReadme {
     fun readme() {
         // Register adapters in this "constructor" block.
         val mappers = Mappers {
+            // Register any enums to be used.
             register<Position>()
             register<Player>()
+            // Only the top of the sealed hierarchy is required.
             register<Jersey>()
             register<Team>()
             // Custom mapper for Color (which is not a data class).
