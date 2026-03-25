@@ -34,8 +34,8 @@ private abstract class Adapter<T> : Mapper<T> {
     private val fnTo = fn("actualTo", Any::class.java)
     private val fnFrom = fn("actualFrom", SExpr::class.java)
 
-    fun safeTo(obj: Any?): SExpr = fnTo(this, obj) as SExpr
-    fun safeFrom(expr: SExpr): Any? = fnFrom(this, expr)
+    fun proxyTo(obj: Any?): SExpr = fnTo(this, obj) as SExpr
+    fun proxyFrom(expr: SExpr): Any? = fnFrom(this, expr)
 }
 
 /**
@@ -53,9 +53,7 @@ class MapperRegistry internal constructor(val mappers: Mappers) {
 }
 
 /**
- * A collection of adapters for translating objects to and from s-expressions.
- * Create an instance, register data classes, invoke toSExpr and fromSExpr.
- * Primitives, (registered) data classes, and pairs, maps, sets, and lists thereof are handled.
+ * A collection of mappers for translating objects to and from s-expressions.
  */
 class Mappers private constructor() {
 
@@ -178,7 +176,7 @@ class Mappers private constructor() {
                     val objClass = obj::class
                     val typeName = objClass.simpleName!!
                     atom(typeName)
-                    expr(typeAdapters.getValue(typeName).safeTo(obj))
+                    expr(typeAdapters.getValue(typeName).proxyTo(obj))
                 }
 
                 override fun fromSExpr(expr: SExpr): T {
@@ -186,7 +184,7 @@ class Mappers private constructor() {
                     val type = items[0].requireAtom().asString()
                     val adapter = typeAdapters.getValue(type)
                     @Suppress("UNCHECKED_CAST")
-                    return adapter.safeFrom(items[1].requireList()) as T
+                    return adapter.proxyFrom(items[1].requireList()) as T
                 }
             }
         } else if (kClass.isSubclassOf(Enum::class)) {
@@ -229,7 +227,7 @@ class Mappers private constructor() {
                         val property = propertiesByName[name]
                             ?: error("${kClass.qualifiedName} has no property with name '$name'")
                         val value = property.get(obj)
-                        val expr = adapter.safeTo(value)
+                        val expr = adapter.proxyTo(value)
                         expr(expr)
                     }
                 }
@@ -244,7 +242,7 @@ class Mappers private constructor() {
                         val name = list[0].requireAtom().asString()
                         val param = paramsByName[name] ?: error("Unknown param $name on $kClass")
                         val adapter = adaptersByName[name] ?: error("Unknown param $name on $kClass")
-                        val s = adapter.safeFrom(list[1])
+                        val s = adapter.proxyFrom(list[1])
                         put(param, s)
                     }
                 })
@@ -258,7 +256,7 @@ class Mappers private constructor() {
     inline fun <reified T> toSExpr(obj: T): SExpr = toSExpr(typeOf<T>(), obj)
 
     @PublishedApi
-    internal fun <T> toSExpr(kType: KType, obj: T): SExpr = adapterFor(kType).safeTo(obj)
+    internal fun <T> toSExpr(kType: KType, obj: T): SExpr = adapterFor(kType).proxyTo(obj)
 
     /**
      * Create an object from an s-expression.
@@ -267,44 +265,44 @@ class Mappers private constructor() {
 
     @PublishedApi
     @Suppress("UNCHECKED_CAST")
-    internal fun <T> fromSExpr(kType: KType, expr: SExpr): T = adapterFor(kType).safeFrom(expr) as T
+    internal fun <T> fromSExpr(kType: KType, expr: SExpr): T = adapterFor(kType).proxyFrom(expr) as T
 
     // Collection handlers.
 
     private fun fromList(itemType: KType, obj: List<*>): SList {
         val adapter = adapterFor(itemType)
         return buildSExpr {
-            obj.forEach { expr(adapter.safeTo(it)) }
+            obj.forEach { expr(adapter.proxyTo(it)) }
         }
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> toList(itemType: KType, expr: SList): T = buildList {
         val adapter = adapterFor(itemType)
-        expr.requireList().exprs.forEach { add(adapter.safeFrom(it)) }
+        expr.requireList().exprs.forEach { add(adapter.proxyFrom(it)) }
     } as T
 
     private fun fromSet(itemType: KType, obj: Set<*>): SList {
         val adapter = adapterFor(itemType)
         return buildSExpr {
-            obj.forEach { expr(adapter.safeTo(it)) }
+            obj.forEach { expr(adapter.proxyTo(it)) }
         }
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> toSet(itemType: KType, expr: SList): T = buildSet {
         val adapter = adapterFor(itemType)
-        expr.requireList().exprs.forEach { add(adapter.safeFrom(it)) }
+        expr.requireList().exprs.forEach { add(adapter.proxyFrom(it)) }
     } as T
 
     private fun fromPair(type1: KType, type2: KType, obj: Pair<*, *>): SList = buildSExpr {
-        expr(adapterFor(type1).safeTo(obj.first))
-        expr(adapterFor(type2).safeTo(obj.second))
+        expr(adapterFor(type1).proxyTo(obj.first))
+        expr(adapterFor(type2).proxyTo(obj.second))
     }
 
     private fun <T> toPair(type1: KType, type2: KType, expr: SList): T {
-        val p = adapterFor(type1).safeFrom(expr.exprs[0])
-        val q = adapterFor(type2).safeFrom(expr.exprs[1])
+        val p = adapterFor(type1).proxyFrom(expr.exprs[0])
+        val q = adapterFor(type2).proxyFrom(expr.exprs[1])
         @Suppress("UNCHECKED_CAST")
         return Pair(p, q) as T
     }
@@ -312,8 +310,8 @@ class Mappers private constructor() {
     private fun fromMap(type1: KType, type2: KType, obj: Map<*, *>): SList = buildSExpr {
         obj.forEach {
             list {
-                expr(adapterFor(type1).safeTo(it.key))
-                expr(adapterFor(type2).safeTo(it.value))
+                expr(adapterFor(type1).proxyTo(it.key))
+                expr(adapterFor(type2).proxyTo(it.value))
             }
         }
     }
@@ -324,8 +322,8 @@ class Mappers private constructor() {
         val a2 = adapterFor(type2)
         expr.exprs.forEach {
             val e = it.requireList().exprs
-            val p = a1.safeFrom(e[0])
-            val q = a2.safeFrom(e[1])
+            val p = a1.proxyFrom(e[0])
+            val q = a2.proxyFrom(e[1])
             put(p, q)
         }
     } as T
