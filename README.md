@@ -20,6 +20,7 @@ Convert objects to s-expressions and back again using the ***mapping*** facility
 
 ```kotlin
 import java.awt.Color
+import java.util.*
 
 // Domain objects.
 
@@ -27,7 +28,7 @@ enum class Position {
     Center, Guard, Forward
 }
 
-data class Player(val number: Int, val position: Position)
+data class Player(val id: UUID, val number: Int, val position: Position)
 
 sealed interface Jersey {
     data class Home(val colors: List<Color>) : Jersey
@@ -48,20 +49,23 @@ val colorMapper = object : Mapper<Color> {
     }
 
     override fun fromSExpr(expr: SExpr): Color = expr.requireList().exprs.let { list ->
-        fun field(index: Int) = list[index].requireAtom().asString()!!.toInt()
+        fun field(index: Int) = list[index].requireBytes().asString()!!.toInt()
         Color(field(0), field(1), field(2))
     }
+}
+
+val uuidMapper = object : Mapper<UUID> {
+    override fun toSExpr(obj: UUID): SExpr = SBytes(obj.toString().bytes())
+    override fun fromSExpr(expr: SExpr): UUID = UUID.fromString(expr.requireBytes().data.string())
 }
 
 // Register adapters in this "constructor" block.
 // Note: register dependent types before containing types.
 val mappers = Mappers {
-    // Register any enums to be used.
     register<Position>()
     register(colorMapper)
-    // Register data classes.
+    register(uuidMapper)
     register<Player>()
-    // Only the top of the sealed hierarchy is required.
     register<Jersey>()
     register<Team>()
 }
@@ -73,11 +77,11 @@ fun main() {
             Jersey.Away(listOf(Color.BLUE, Color.BLACK))
         ),
         players = listOf(
-            Player(42, Position.Center),
-            Player(11, Position.Guard),
-            Player(9, Position.Guard),
-            Player(14, Position.Forward),
-            Player(2, Position.Forward),
+            Player(UUID.randomUUID(), 42, Position.Center),
+            Player(UUID.randomUUID(), 11, Position.Guard),
+            Player(UUID.randomUUID(), 9, Position.Guard),
+            Player(UUID.randomUUID(), 14, Position.Forward),
+            Player(UUID.randomUUID(), 2, Position.Forward),
         )
     )
 
@@ -97,7 +101,8 @@ fun main() {
 
 ## Features
 
-* Built-in support for List, Set, Pair, and Map collection types.
+* Supports **data classes** and **enums**.
 * Built-in support for multi-level sealed data class hierarchies.
-* Built-in support for enums.
+* Built-in support for the *List*, *Set*, *Pair*, and *Map* collection types.
+* Built-in support for the *Int*, *Long*, *Double*, *Float*, *Char*, *String*, *Byte*, and *Boolean* atomic types
 * Custom mappers.

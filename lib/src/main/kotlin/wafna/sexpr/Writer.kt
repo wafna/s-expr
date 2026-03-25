@@ -30,7 +30,7 @@ private val CString = "\"([^\"\\\\]*|\\\\.)*\"".toRegex()
 fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}): OutputStream {
     val settings = WriterSettings().apply(settings)
     fun writeBytes(data: ByteArray) {
-        stream.write("${data.size}:".toByteArray(Charsets.UTF_8))
+        stream.write("${data.size}:".bytes())
         stream.write(data)
     }
 

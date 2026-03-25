@@ -64,51 +64,51 @@ class Mappers private constructor() {
             override fun toSExpr(obj: Byte?): SExpr =
                 obj?.let { o -> SBytes(ByteArray(1).also { it[0] = o }) } ?: SNull
 
-            override fun fromSExpr(expr: SExpr): Byte? = expr.mapAtom { data[0] }
+            override fun fromSExpr(expr: SExpr): Byte = expr.mapAtom { data[0] }
         },
         Char::class to object : Adapter<Char?>() {
             override fun toSExpr(obj: Char?): SExpr =
                 obj?.let { SBytes(ByteArray(1).also { it[0] = obj.code.toByte() }) } ?: SNull
 
-            override fun fromSExpr(expr: SExpr): Char? = expr.mapAtom { data[0].toInt().toChar() }
+            override fun fromSExpr(expr: SExpr): Char = expr.mapAtom { data[0].toInt().toChar() }
         },
         String::class to object : Adapter<String?>() {
             override fun toSExpr(obj: String?): SExpr =
-                obj?.let { SBytes(obj.toByteArray()) } ?: SNull
+                obj?.let { SBytes(obj.bytes()) } ?: SNull
 
             override fun fromSExpr(expr: SExpr): String? = expr.requireAtom().asString()
         },
         Boolean::class to object : Adapter<Boolean?>() {
             override fun toSExpr(obj: Boolean?): SExpr =
-                obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
+                obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
 
             override fun fromSExpr(expr: SExpr): Boolean? =
                 expr.requireAtom().asString()?.run { toBooleanStrictOrNull() ?: error("Expected Boolean, got $this.") }
         },
         Int::class to object : Adapter<Int?>() {
             override fun toSExpr(obj: Int?): SExpr =
-                obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
+                obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
 
             override fun fromSExpr(expr: SExpr): Int? =
                 expr.requireAtom().asString()?.run { toIntOrNull() ?: error("Expected Int, got $this.") }
         },
         Long::class to object : Adapter<Long?>() {
             override fun toSExpr(obj: Long?): SExpr =
-                obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
+                obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
 
             override fun fromSExpr(expr: SExpr): Long? =
                 expr.requireAtom().asString()?.run { toLongOrNull() ?: error("Expected Long, got $this") }
         },
         Double::class to object : Adapter<Double?>() {
             override fun toSExpr(obj: Double?): SExpr =
-                obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
+                obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
 
             override fun fromSExpr(expr: SExpr): Double? =
                 expr.requireAtom().asString()?.run { toDoubleOrNull() ?: error("Expected Double, got $this") }
         },
         Float::class to object : Adapter<Float?>() {
             override fun toSExpr(obj: Float?): SExpr =
-                obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
+                obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
 
             override fun fromSExpr(expr: SExpr): Float? =
                 expr.requireAtom().asString()?.run { toFloatOrNull() ?: error("Expected Float, got $this") }
@@ -204,7 +204,7 @@ class Mappers private constructor() {
             override fun toSExpr(obj: T): SExpr = buildSExpr {
                 adaptersByName.forEach { (name, adapter) ->
                     list {
-                        atom(name.toByteArray(Charsets.UTF_8))
+                        atom(name.bytes())
                         val property = propertiesByName[name]
                             ?: error("${kClass.qualifiedName} has no property with name '$name'")
                         val value = property.get(obj)
@@ -273,7 +273,7 @@ class Mappers private constructor() {
         }
         adapters[kClass] = object : Adapter<T>() {
             override fun toSExpr(obj: T): SExpr =
-                SBytes(obj.toString().toByteArray())
+                SBytes(obj.toString().bytes())
 
             override fun fromSExpr(expr: SExpr): T =
                 byName.getValue(expr.mapAtom { asString() }!!) as T

@@ -18,7 +18,7 @@ class TestBuilder {
             atom("a")
             list {
                 atom("b")
-                atom("c".toByteArray())
+                atom("c".bytes())
             }
         }.run {
             assertEquals(exprs.size, 2)

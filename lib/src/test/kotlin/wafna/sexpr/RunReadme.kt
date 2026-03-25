@@ -34,14 +34,14 @@ val colorMapper = object : Mapper<Color> {
     }
 
     override fun fromSExpr(expr: SExpr): Color = expr.requireList().exprs.let { list ->
-        fun field(index: Int) = list[index].requireAtom().asString()!!.toInt()
+        fun field(index: Int) = list[index].requireBytes().asString()!!.toInt()
         Color(field(0), field(1), field(2))
     }
 }
 
 val uuidMapper = object : Mapper<UUID> {
-    override fun toSExpr(obj: UUID): SExpr = SBytes(obj.toString().toByteArray(Charsets.UTF_8))
-    override fun fromSExpr(expr: SExpr): UUID = UUID.fromString(String(expr.requireBytes().data, Charsets.UTF_8))
+    override fun toSExpr(obj: UUID): SExpr = SBytes(obj.toString().bytes())
+    override fun fromSExpr(expr: SExpr): UUID = UUID.fromString(expr.requireBytes().data.string())
 }
 
 // Register adapters in this "constructor" block.

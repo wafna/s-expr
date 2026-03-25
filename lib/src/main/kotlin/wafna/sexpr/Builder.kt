@@ -15,7 +15,7 @@ class SExprBuilder {
      * Add string as an atom.
      */
     fun atom(string: String) {
-        exprs.push(SBytes(string.toByteArray()))
+        exprs.push(SBytes(string.bytes()))
     }
 
     /**

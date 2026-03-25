@@ -56,7 +56,7 @@ fun readSExpr(input: CharStream, reader: Reader) {
         when (val token = lexer.nextToken()) {
             Token.LBracket -> reader.startList()
             Token.RBracket -> if (reader.endList()) break
-            is Token.LString -> reader.atom(SBytes(token.value.toByteArray(Charsets.UTF_8)))
+            is Token.LString -> reader.atom(SBytes(token.value.bytes()))
             is Token.LInteger -> {
                 require(Token.Colon == lexer.nextToken())
                 val count = token.value
@@ -91,10 +91,13 @@ fun <T> SExpr.mapAtom(msg: String = "Expecting non-null atom.", f: SBytes.() -> 
     else -> error(msg)
 }
 
+fun ByteArray.string(): String = String(this, Charsets.UTF_8)
+fun String.bytes(): ByteArray = toByteArray(Charsets.UTF_8)
+
 /**
  * Convert atom data to UTF-8 string.
  */
 fun SAtom.asString(): String? = when (this) {
-    is SBytes -> String(data, Charsets.UTF_8)
+    is SBytes -> data.string()
     is SNull -> null
 }
