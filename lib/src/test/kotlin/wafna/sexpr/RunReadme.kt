@@ -34,7 +34,7 @@ val colorMapper = object : Mapper<Color> {
         atom(obj.blue.toString())
     }
 
-    // Use the reader DSL to require types and access atom data.
+    // Use the reader DSL to narrow types and access the data in lists and atoms.
     override fun fromSExpr(expr: SExpr): Color = expr.requireList().exprs.let { list ->
         fun field(index: Int) = list[index].requireBytes().asString()!!.toInt()
         Color(field(0), field(1), field(2))

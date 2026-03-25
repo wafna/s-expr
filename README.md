@@ -6,8 +6,8 @@ which contain arrays of bytes.
 Importantly, there is no restriction on the values of the bytes.
 This makes the format extremely efficient for all forms of data, esp. binary.
 
-This library is built for Kotlin and natively supports the List, Set, Pair, Map collection types as well as enums.
-There is also built-in support for multiple levels of sealed class hierarchies containing data classes. 
+This library is built for Kotlin and natively supports the List, Set, Pair, and Map collection types as well as enums.
+There is also built-in support for multiple levels of sealed data class hierarchies. 
 
 For literal s-expressions, the parser recognizes bare words (C style identifiers), 
 double-quoted strings (C style strings), and run length encoded atoms. 
@@ -49,7 +49,7 @@ val colorMapper = object : Mapper<Color> {
         atom(obj.blue.toString())
     }
 
-    // Use the reader DSL to require types and access atom data.
+    // Use the reader DSL to narrow types and access list and atom data.
     override fun fromSExpr(expr: SExpr): Color = expr.requireList().exprs.let { list ->
         fun field(index: Int) = list[index].requireBytes().asString()!!.toInt()
         Color(field(0), field(1), field(2))
@@ -106,5 +106,5 @@ fun main() {
 * Supports **data classes** and **enums**.
 * Built-in support for multi-level sealed data class hierarchies.
 * Built-in support for the *List*, *Set*, *Pair*, and *Map* collection types.
-* Built-in support for the *Int*, *Long*, *Double*, *Float*, *Char*, *String*, *Byte*, and *Boolean* atomic types
+* Built-in support for the *Int*, *Long*, *Short*, *Double*, *Float*, *Char*, *String*, *Byte*, and *Boolean* atomic types
 * Custom mappers.

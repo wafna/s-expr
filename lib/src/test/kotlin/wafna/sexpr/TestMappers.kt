@@ -7,9 +7,15 @@ import org.junit.jupiter.api.assertThrows
 import java.awt.Color
 
 internal data class PrimitivesOnly(
-    val name: String,
-    val count: Int,
-    val value: Double
+    val boolean: Boolean = true,
+    val byte: Byte = Byte.MIN_VALUE,
+    val char: Char = '$',
+    val string: String = "string",
+    val short: Short = Short.MIN_VALUE,
+    val int: Int = Int.MIN_VALUE,
+    val long: Long = Long.MAX_VALUE,
+    val double: Double = Double.MIN_VALUE,
+    val float: Float = Float.MIN_VALUE,
 )
 
 internal data class Nullables(
@@ -50,7 +56,7 @@ class TestMappers {
     fun primitives() {
         Mappers {
             register<PrimitivesOnly>()
-        }.testObject(PrimitivesOnly("foo", 42, PI))
+        }.testObject(PrimitivesOnly())
     }
     @Test
     fun listsOfPrimitives() {
@@ -77,12 +83,7 @@ class TestMappers {
             register<PrimitivesOnly>()
             register<ListsOfPrimitives>()
             register<NestedObjects>()
-        }.testObject(
-            NestedObjects(
-                primitivesOnly,
-                listsOfPrimitives
-            )
-        )
+        }.testObject(NestedObjects(PrimitivesOnly(), listsOfPrimitives))
     }
     @Test
     fun nullables() {
@@ -96,7 +97,7 @@ class TestMappers {
         Mappers().testObject(listOf(1, 2, 3))
         Mappers().testObject(List(3) { x -> List(3) { y -> x + y } })
         Mappers { register<PrimitivesOnly>() }
-            .testObject(List(4) { PrimitivesOnly("$it", it, it.toDouble()) })
+            .testObject(List(4) { PrimitivesOnly() })
     }
     @Test
     fun set() {
@@ -163,11 +164,6 @@ class TestMappers {
     }
 
     companion object {
-        internal val primitivesOnly = PrimitivesOnly(
-            name = "foo",
-            count = 42,
-            value = PI
-        )
         internal val listsOfPrimitives = ListsOfPrimitives(
             names = listOf("foo", "bar"),
             counts = listOf(1, 2, 3),

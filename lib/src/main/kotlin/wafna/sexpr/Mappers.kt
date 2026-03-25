@@ -85,6 +85,13 @@ class Mappers private constructor() {
             override fun fromSExpr(expr: SExpr): Boolean? =
                 expr.requireAtom().asString()?.run { toBooleanStrictOrNull() ?: error("Expected Boolean, got $this.") }
         },
+        Short::class to object : Adapter<Short?>() {
+            override fun toSExpr(obj: Short?): SExpr =
+                obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
+
+            override fun fromSExpr(expr: SExpr): Short? =
+                expr.requireAtom().asString()?.run { toShortOrNull() ?: error("Expected Short, got $this.") }
+        },
         Int::class to object : Adapter<Int?>() {
             override fun toSExpr(obj: Int?): SExpr =
                 obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
