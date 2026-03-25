@@ -29,6 +29,7 @@ internal fun lexer(input: CharStream): Lexer = object : Lexer {
             ']' -> Token.RBracket
             ':' -> Token.Colon
             '"' -> parseString()
+            '-' -> Token.Null
             else -> {
                 // Accepts leading zeros.
                 if (c.isDigit()) {

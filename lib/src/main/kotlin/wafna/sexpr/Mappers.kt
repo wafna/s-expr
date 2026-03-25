@@ -23,9 +23,9 @@ interface Mapper<T> {
  */
 private abstract class Adapter<T> : Mapper<T> {
     @Suppress("unused")
-    fun actualTo(obj: T?): SExpr = obj?.let { toSExpr(it) } ?: SAtom.NULL
+    fun actualTo(obj: T?): SExpr = obj?.let { toSExpr(it) } ?: SNull
     @Suppress("unused")
-    fun actualFrom(expr: SExpr): T? = if (expr == SAtom.NULL) null else fromSExpr(expr)
+    fun actualFrom(expr: SExpr): T? = if (expr == SNull) null else fromSExpr(expr)
 
     // Look up the targets to save one reflective step.
     private fun fn(name: String, vararg parameterTypes: Class<*>): Method =
@@ -60,37 +60,51 @@ class Mappers private constructor() {
     private val adapters = mutableMapOf<KClass<*>, Adapter<*>>(
         // Primitive adapters.
         // Collection types are built on the fly, below.
-        Byte::class to object : Adapter<Byte>() {
-            override fun toSExpr(obj: Byte): SExpr = SAtom(ByteArray(1).also { it[0] = obj })
-            override fun fromSExpr(expr: SExpr): Byte = expr.requireAtom().data[0]
+        Byte::class to object : Adapter<Byte?>() {
+            override fun toSExpr(obj: Byte?): SExpr = obj?.let { o -> SBytes(ByteArray(1).also { it[0] = o }) } ?: SNull
+            override fun fromSExpr(expr: SExpr): Byte? = expr.mapAtom { data[0] }
         },
-        Char::class to object : Adapter<Char>() {
-            override fun toSExpr(obj: Char): SExpr = SAtom(ByteArray(1).also { it[0] = obj.code.toByte() })
-            override fun fromSExpr(expr: SExpr): Char = expr.requireAtom().data[0].toInt().toChar()
+        Char::class to object : Adapter<Char?>() {
+            override fun toSExpr(obj: Char?): SExpr = obj?.let {
+                SBytes(ByteArray(1).also {
+                    it[0] = obj.code.toByte()
+                })
+            } ?: SNull
+
+            override fun fromSExpr(expr: SExpr): Char? = expr.mapAtom { data[0].toInt().toChar() }
         },
-        String::class to object : Adapter<String>() {
-            override fun toSExpr(obj: String): SExpr = SAtom(obj.toByteArray())
-            override fun fromSExpr(expr: SExpr): String = expr.requireAtom().asString()
+        String::class to object : Adapter<String?>() {
+            override fun toSExpr(obj: String?): SExpr = obj?.let { SBytes(obj.toByteArray()) } ?: SNull
+            override fun fromSExpr(expr: SExpr): String? = expr.mapAtom { asString() }
         },
-        Boolean::class to object : Adapter<Boolean>() {
-            override fun toSExpr(obj: Boolean): SExpr = SAtom(obj.toString().toByteArray())
-            override fun fromSExpr(expr: SExpr): Boolean =
-                expr.requireAtom().asString().run { toBooleanStrictOrNull() ?: error("Expected Boolean, got $this.") }
+        Boolean::class to object : Adapter<Boolean?>() {
+            override fun toSExpr(obj: Boolean?): SExpr = obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
+            override fun fromSExpr(expr: SExpr): Boolean? =
+                expr.mapAtom {
+                    asString().run {
+                        toBooleanStrictOrNull() ?: error("Expected Boolean, got $this.")
+                    }
+                }
         },
-        Int::class to object : Adapter<Int>() {
-            override fun toSExpr(obj: Int): SExpr = SAtom(obj.toString().toByteArray())
-            override fun fromSExpr(expr: SExpr): Int =
-                expr.requireAtom().asString().run { toIntOrNull() ?: error("Expected Int, got $this.") }
+        Int::class to object : Adapter<Int?>() {
+            override fun toSExpr(obj: Int?): SExpr = obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
+            override fun fromSExpr(expr: SExpr): Int? =
+                expr.mapAtom { asString().run { toIntOrNull() ?: error("Expected Int, got $this.") } }
         },
-        Long::class to object : Adapter<Long>() {
-            override fun toSExpr(obj: Long): SExpr = SAtom(obj.toString().toByteArray())
-            override fun fromSExpr(expr: SExpr): Long =
-                expr.requireAtom().asString().run { toLongOrNull() ?: error("Expected Long, got $this") }
+        Long::class to object : Adapter<Long?>() {
+            override fun toSExpr(obj: Long?): SExpr = obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
+            override fun fromSExpr(expr: SExpr): Long? =
+                expr.mapAtom { asString().run { toLongOrNull() ?: error("Expected Long, got $this") } }
         },
-        Double::class to object : Adapter<Double>() {
-            override fun toSExpr(obj: Double): SExpr = SAtom(obj.toString().toByteArray())
-            override fun fromSExpr(expr: SExpr): Double =
-                expr.requireAtom().asString().run { toDoubleOrNull() ?: error("Expected Double, got $this") }
+        Double::class to object : Adapter<Double?>() {
+            override fun toSExpr(obj: Double?): SExpr = obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
+            override fun fromSExpr(expr: SExpr): Double? =
+                expr.mapAtom { asString().run { toDoubleOrNull() ?: error("Expected Double, got $this") } }
+        },
+        Float::class to object : Adapter<Float?>() {
+            override fun toSExpr(obj: Float?): SExpr = obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
+            override fun fromSExpr(expr: SExpr): Float? =
+                expr.mapAtom { asString().run { toFloatOrNull() ?: error("Expected Float, got $this") } }
         }
     )
 
@@ -181,7 +195,7 @@ class Mappers private constructor() {
 
                 override fun fromSExpr(expr: SExpr): T {
                     val items = expr.requireList().exprs
-                    val type = items[0].requireAtom().asString()
+                    val type = items[0].mapAtom { asString() }!!
                     val adapter = typeAdapters.getValue(type)
                     @Suppress("UNCHECKED_CAST")
                     return adapter.proxyFrom(items[1].requireList()) as T
@@ -195,10 +209,10 @@ class Mappers private constructor() {
             }
             adapters[kClass] = object : Adapter<T>() {
                 override fun toSExpr(obj: T): SExpr =
-                    SAtom(obj.toString().toByteArray())
+                    SBytes(obj.toString().toByteArray())
 
                 override fun fromSExpr(expr: SExpr): T =
-                    byName.getValue(expr.requireAtom().asString()) as T
+                    byName.getValue(expr.mapAtom { asString() }!!) as T
             }
         } else {
             error("Data class or sealed class required.")
@@ -239,7 +253,7 @@ class Mappers private constructor() {
                     exprs.forEach { expr ->
                         val list = expr.requireList().exprs
                         require(2 == list.size) { "Malformed value entry: ${list.size}" }
-                        val name = list[0].requireAtom().asString()
+                        val name = list[0].mapAtom { asString() }!!
                         val param = paramsByName[name] ?: error("Unknown param $name on $kClass")
                         val adapter = adaptersByName[name] ?: error("Unknown param $name on $kClass")
                         val s = adapter.proxyFrom(list[1])

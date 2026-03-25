@@ -84,7 +84,8 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
             }
         }
         when (s) {
-            is SAtom -> when (settings.dataFormat) {
+            is SNull -> stream.write('-'.code)
+            is SBytes -> when (settings.dataFormat) {
                 DataFormat.Canonical -> writeBytes(s.data)
                 DataFormat.Readable -> if (s.data.first().toInt().toChar().isJavaIdentifierStart() && s.data.drop(1)
                         .all { it.toInt().toChar().isJavaIdentifierPart() }

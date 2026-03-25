@@ -5,6 +5,7 @@ internal sealed interface Token {
     object LBracket : Token
     object RBracket : Token
     object Colon : Token
+    object Null : Token
     // Literals
     data class LString(val value: String) : Token
     data class LInteger(val value: Int) : Token

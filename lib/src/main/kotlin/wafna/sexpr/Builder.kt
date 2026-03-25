@@ -8,14 +8,14 @@ class SExprBuilder {
      * Add bytes as an atom.
      */
     fun atom(bytes: ByteArray) {
-        exprs.push(SAtom(bytes))
+        exprs.push(SBytes(bytes))
     }
 
     /**
      * Add string as an atom.
      */
     fun atom(string: String) {
-        exprs.push(SAtom(string.toByteArray()))
+        exprs.push(SBytes(string.toByteArray()))
     }
 
     /**

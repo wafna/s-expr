@@ -41,7 +41,7 @@ class TestReadme {
                 }
 
                 override fun fromSExpr(expr: SExpr): Color = expr.requireList().exprs.let { list ->
-                    fun field(index: Int) = list[index].requireAtom().asString().toInt()
+                    fun field(index: Int) = list[index].mapAtom { asString().toInt() }!!
                     Color(field(0), field(1), field(2))
                 }
             })

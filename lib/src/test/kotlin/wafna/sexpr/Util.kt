@@ -6,15 +6,19 @@ import kotlin.test.fail
 fun parse(input: String) = readSExpr(CharStream.from(input))
 
 fun assertAtom(expected: SExpr, actual: String) {
-    val expected = expected as SAtom
+    val expected = expected as SBytes
     assertEquals(String(expected.data), actual)
 }
 
 fun compareSExpr(actual: SExpr, expected: SExpr) {
     when (actual) {
-        is SAtom -> when (expected) {
-            is SAtom -> assertEquals(expected.data.toString(Charsets.UTF_8), actual.data.toString(Charsets.UTF_8))
-            is SList -> fail("Incompatible: expected SList, got SAtom")
+        SNull -> when (expected) {
+            SNull -> {}
+            else -> fail("Expected $expected to be null")
+        }
+        is SBytes -> when (expected) {
+            is SBytes -> assertEquals(expected.data.toString(Charsets.UTF_8), actual.data.toString(Charsets.UTF_8))
+            else -> fail("Incompatible: expected SAtom, got ${expected::class.simpleName}")
         }
 
         is SList -> when (expected) {
@@ -25,7 +29,7 @@ fun compareSExpr(actual: SExpr, expected: SExpr) {
                 }
             }
 
-            is SAtom -> fail("Incompatible: expected SAtom, got SList")
+            else -> fail("Incompatible: expected SAtom, got ${expected::class.simpleName}")
         }
     }
 }

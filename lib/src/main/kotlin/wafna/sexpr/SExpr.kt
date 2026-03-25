@@ -4,12 +4,14 @@ package wafna.sexpr
  * An s-expression is a tree of branch nodes (lists) and leaf nodes (atoms).
  * Atoms are arrays of bytes.
  */
-sealed class SExpr
-class SAtom(val data: ByteArray) : SExpr() {
-    companion object {
-        val NULL = SAtom(ByteArray(0))
-    }
-}
+sealed interface SExpr
 
-class SList(val exprs: List<SExpr>) : SExpr()
+/**
+ * An empty atom (e.g. an empty string) is not the same as a null atom (e.g. an absent string).
+ */
+sealed class SAtom : SExpr
+class SBytes(val data: ByteArray) : SAtom()
+object SNull : SAtom()
+
+class SList(val exprs: List<SExpr>) : SExpr
 

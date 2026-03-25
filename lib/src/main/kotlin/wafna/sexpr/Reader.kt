@@ -56,14 +56,15 @@ fun readSExpr(input: CharStream, reader: Reader) {
         when (val token = lexer.nextToken()) {
             Token.LBracket -> reader.startList()
             Token.RBracket -> if (reader.endList()) break
-            is Token.LString -> reader.atom(SAtom(token.value.toByteArray(Charsets.UTF_8)))
+            is Token.LString -> reader.atom(SBytes(token.value.toByteArray(Charsets.UTF_8)))
             is Token.LInteger -> {
                 require(Token.Colon == lexer.nextToken())
                 val count = token.value
                 val bytes = lexer.nextBytes(count)
-                reader.atom(SAtom(bytes))
+                reader.atom(SBytes(bytes))
             }
 
+            Token.Null -> reader.atom(SNull)
             Token.Colon -> error("Unexpected colon, ':'.")
             Token.EOF -> error("Missing required end of list, ']'.")
         }
@@ -75,12 +76,16 @@ fun SExpr.requireList(msg: String = "Expected list."): SList = when (this) {
     is SList -> this
 }
 
-fun SExpr.requireAtom(msg: String = "Expected atom."): SAtom = when (this) {
-    is SAtom -> this
+fun <T> SExpr.mapAtom(msg: String = "Expecting non-null atom.", f: SBytes.() -> T) = when (this) {
+    is SAtom -> when (this) {
+        is SNull -> null
+        is SBytes -> f(this)
+    }
+
     is SList -> error(msg)
 }
 
 /**
  * Convert atom data to UTF-8 string.
  */
-fun SAtom.asString(): String = String(data, Charsets.UTF_8)
+fun SBytes.asString(): String = String(data, Charsets.UTF_8)
