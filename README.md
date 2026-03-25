@@ -44,7 +44,7 @@ val mappers = Mappers {
     // Register any enums to be used.
     register<Position>()
     register<Player>()
-    // Only the top of the hierarchy is required.
+    // Only the top of the sealed hierarchy is required.
     register<Jersey>()
     register<Team>()
     // Custom mapper for Color (which is not a data class).
@@ -78,7 +78,7 @@ val team = Team(
     )
 )
 
-// All serialization goes through the one object.
+// All serialization goes through the mappers object.
 val expr = mappers.toSExpr<Team>(team)
 // Note that converting strings to and from s-expressions and converting objects to and from s-expressions
 // are distinctly separate.

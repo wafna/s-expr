@@ -63,7 +63,7 @@ class TestReadme {
             )
         )
 
-        // All serialization goes through the one object.
+        // All serialization goes through the mappers object.
         val expr = mappers.toSExpr<Team>(team)
         // Note that converting strings to and from s-expressions and converting objects to and from s-expressions
         // are distinctly separate.
