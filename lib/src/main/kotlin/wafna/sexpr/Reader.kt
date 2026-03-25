@@ -76,6 +76,11 @@ fun SExpr.requireList(msg: String = "Expected list."): SList = when (this) {
     is SList -> this
 }
 
+fun SExpr.requireAtom(msg: String = "Expected atom."): SAtom = when (this) {
+    is SAtom -> this
+    is SList -> error(msg)
+}
+
 fun <T> SExpr.mapAtom(msg: String = "Expecting non-null atom.", f: SBytes.() -> T) = when (this) {
     is SAtom -> when (this) {
         is SNull -> null
@@ -88,4 +93,7 @@ fun <T> SExpr.mapAtom(msg: String = "Expecting non-null atom.", f: SBytes.() -> 
 /**
  * Convert atom data to UTF-8 string.
  */
-fun SBytes.asString(): String = String(data, Charsets.UTF_8)
+fun SAtom.asString(): String? = when (this) {
+    is SBytes -> String(data, Charsets.UTF_8)
+    is SNull -> null
+}

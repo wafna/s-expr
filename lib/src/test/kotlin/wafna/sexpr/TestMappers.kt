@@ -169,7 +169,7 @@ class TestMappers {
                 }
 
                 override fun fromSExpr(expr: SExpr): Color = expr.requireList().let { list ->
-                    fun field(index: Int) = list.exprs[index].mapAtom { asString().toInt() }!!
+                    fun field(index: Int) = list.exprs[index].requireAtom().asString()!!.toInt()
                     Color(field(0), field(1), field(2))
 
                 }

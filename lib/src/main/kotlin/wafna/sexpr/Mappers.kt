@@ -75,36 +75,32 @@ class Mappers private constructor() {
         },
         String::class to object : Adapter<String?>() {
             override fun toSExpr(obj: String?): SExpr = obj?.let { SBytes(obj.toByteArray()) } ?: SNull
-            override fun fromSExpr(expr: SExpr): String? = expr.mapAtom { asString() }
+            override fun fromSExpr(expr: SExpr): String? = expr.requireAtom().asString()
         },
         Boolean::class to object : Adapter<Boolean?>() {
             override fun toSExpr(obj: Boolean?): SExpr = obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
             override fun fromSExpr(expr: SExpr): Boolean? =
-                expr.mapAtom {
-                    asString().run {
-                        toBooleanStrictOrNull() ?: error("Expected Boolean, got $this.")
-                    }
-                }
+                expr.requireAtom().asString()?.run { toBooleanStrictOrNull() ?: error("Expected Boolean, got $this.") }
         },
         Int::class to object : Adapter<Int?>() {
             override fun toSExpr(obj: Int?): SExpr = obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
             override fun fromSExpr(expr: SExpr): Int? =
-                expr.mapAtom { asString().run { toIntOrNull() ?: error("Expected Int, got $this.") } }
+                expr.requireAtom().asString()?.run { toIntOrNull() ?: error("Expected Int, got $this.") }
         },
         Long::class to object : Adapter<Long?>() {
             override fun toSExpr(obj: Long?): SExpr = obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
             override fun fromSExpr(expr: SExpr): Long? =
-                expr.mapAtom { asString().run { toLongOrNull() ?: error("Expected Long, got $this") } }
+                expr.requireAtom().asString()?.run { toLongOrNull() ?: error("Expected Long, got $this") }
         },
         Double::class to object : Adapter<Double?>() {
             override fun toSExpr(obj: Double?): SExpr = obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
             override fun fromSExpr(expr: SExpr): Double? =
-                expr.mapAtom { asString().run { toDoubleOrNull() ?: error("Expected Double, got $this") } }
+                expr.requireAtom().asString()?.run { toDoubleOrNull() ?: error("Expected Double, got $this") }
         },
         Float::class to object : Adapter<Float?>() {
             override fun toSExpr(obj: Float?): SExpr = obj?.let { SBytes(obj.toString().toByteArray()) } ?: SNull
             override fun fromSExpr(expr: SExpr): Float? =
-                expr.mapAtom { asString().run { toFloatOrNull() ?: error("Expected Float, got $this") } }
+                expr.requireAtom().asString()?.run { toFloatOrNull() ?: error("Expected Float, got $this") }
         }
     )
 
