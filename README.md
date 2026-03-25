@@ -42,12 +42,14 @@ data class Team(
 
 // Custom mapper for Color (which is not a data class).
 val colorMapper = object : Mapper<Color> {
+    // Use the builder DSL to construct a list of the RGB values.
     override fun toSExpr(obj: Color): SExpr = buildSExpr {
         atom(obj.red.toString())
         atom(obj.green.toString())
         atom(obj.blue.toString())
     }
 
+    // Use the reader DSL to require types and access atom data.
     override fun fromSExpr(expr: SExpr): Color = expr.requireList().exprs.let { list ->
         fun field(index: Int) = list[index].requireBytes().asString()!!.toInt()
         Color(field(0), field(1), field(2))
@@ -85,10 +87,10 @@ fun main() {
         )
     )
 
-    // All serialization goes through the mappers object.
+    // All conversion goes through the mappers object.
     val expr = mappers.toSExpr<Team>(team)
-    // Note that converting strings to and from s-expressions and converting objects to and from s-expressions
-    // are distinctly separate.
+    // Note that converting strings to and from s-expressions 
+    // and converting objects to and from s-expressions are separate.
     println(expr.showSExpr())
     // Recreate the object from the s-expression.
     val actualFromExpr = mappers.fromSExpr<Team>(expr)
