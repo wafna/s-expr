@@ -3,25 +3,25 @@ package wafna.sexpr
 /**
  * Input to the lexer.
  */
-class CharStream(private val iterator: Iterator<Char>) {
+class ByteStream(private val iterator: Iterator<Byte>) {
     var column = 0
     var line = 0
-    var peek: Char? = null
-    fun peek(): Char? = if (null != peek) peek else {
+    var peek: Byte? = null
+    fun peek(): Byte? = if (null != peek) peek else {
         if (!iterator.hasNext()) null else iterator.next().also {
             peek = it
-            if (it == '\n') {
+            if (it == Bytes.newLine) {
                 column = 0
                 ++line
             } else ++column
         }
     }
 
-    fun take(): Char? = if (null != peek) {
+    fun take(): Byte? = if (null != peek) {
         peek.also { peek = null }
     } else {
         if (!iterator.hasNext()) null else iterator.next().also {
-            if (it == '\n') {
+            if (it == Bytes.newLine) {
                 column = 0
                 ++line
             } else ++column
@@ -29,6 +29,11 @@ class CharStream(private val iterator: Iterator<Char>) {
     }
 
     companion object {
-        fun from(s: String) = CharStream(s.iterator())
+        fun from(s: String) = ByteStream(s.iterator().map { it.code.toByte() })
     }
+}
+
+fun <T, R> Iterator<T>.map(transform: (T) -> R): Iterator<R> = object : Iterator<R> {
+    override fun next(): R = transform(this@map.next())
+    override fun hasNext(): Boolean = this@map.hasNext()
 }

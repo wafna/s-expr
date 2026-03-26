@@ -3,17 +3,17 @@ package wafna.sexpr
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class TestCharStream {
+class TestByteStream {
     @Test
     fun test() {
-        val stream = CharStream.from("abc")
-        assertEquals('a', stream.peek())
-        assertEquals('a', stream.peek())
-        assertEquals('a', stream.take())
-        assertEquals('b', stream.peek())
-        assertEquals('b', stream.peek())
-        assertEquals('b', stream.take())
-        assertEquals('c', stream.take())
+        val stream = ByteStream.from("abc")
+        assertEquals('a'.code.toByte(), stream.peek())
+        assertEquals('a'.code.toByte(), stream.peek())
+        assertEquals('a'.code.toByte(), stream.take())
+        assertEquals('b'.code.toByte(), stream.peek())
+        assertEquals('b'.code.toByte(), stream.peek())
+        assertEquals('b'.code.toByte(), stream.take())
+        assertEquals('c'.code.toByte(), stream.take())
         assertEquals(null, stream.peek())
         assertEquals(null, stream.take())
     }

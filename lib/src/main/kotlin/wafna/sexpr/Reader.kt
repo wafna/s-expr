@@ -43,20 +43,20 @@ internal class TreeBuilder : Reader {
 /**
  * Translate the input into an s-expression.
  */
-fun readSExpr(input: CharStream): SList =
+fun readSExpr(input: ByteStream): SList =
     TreeBuilder().apply { readSExpr(input, this) }.finish()
 
 /**
  * Consume the parse output with the reader.
  */
-fun readSExpr(input: CharStream, reader: Reader) {
+fun readSExpr(input: ByteStream, reader: Reader) {
     val lexer = lexer(input)
     require(lexer.nextToken() == Token.LBracket)
     while (true) {
         when (val token = lexer.nextToken()) {
             Token.LBracket -> reader.startList()
             Token.RBracket -> if (reader.endList()) break
-            is Token.LString -> reader.atom(SBytes(token.value.bytes()))
+            is Token.LString -> reader.atom(SBytes(token.value))
             is Token.LInteger -> {
                 require(Token.Colon == lexer.nextToken())
                 val count = token.value

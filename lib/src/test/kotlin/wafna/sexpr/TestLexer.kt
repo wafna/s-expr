@@ -5,7 +5,7 @@ import kotlin.test.assertEquals
 
 class TestLexer {
     internal fun withLexer(input: String, f: (Lexer) -> Unit) =
-        f(lexer(CharStream.from(input)))
+        f(lexer(ByteStream.from(input)))
     @Test
     fun test() {
         withLexer("[") { lexer ->
@@ -29,25 +29,33 @@ class TestLexer {
         }
         withLexer("[\"blab\"]") { lexer ->
             assertEquals(Token.LBracket, lexer.nextToken())
-            assertEquals(Token.LString("blab"), lexer.nextToken())
+            assertAtom("blab".bytes(), lexer.nextToken())
             assertEquals(Token.RBracket, lexer.nextToken())
             assertEquals(Token.EOF, lexer.nextToken())
         }
         withLexer("[\"blab\\\"\\\\\\n\"]") { lexer ->
             assertEquals(Token.LBracket, lexer.nextToken())
-            assertEquals(Token.LString("blab\"\\\n"), lexer.nextToken())
+            assertAtom("blab\"\\\n".bytes(), lexer.nextToken())
             assertEquals(Token.RBracket, lexer.nextToken())
             assertEquals(Token.EOF, lexer.nextToken())
         }
         withLexer("[bing bang[ boom]]") { lexer ->
             assertEquals(Token.LBracket, lexer.nextToken())
-            assertEquals(Token.LString("bing"), lexer.nextToken())
-            assertEquals(Token.LString("bang"), lexer.nextToken())
+            assertAtom("bing".bytes(), lexer.nextToken())
+            assertAtom("bang".bytes(), lexer.nextToken())
             assertEquals(Token.LBracket, lexer.nextToken())
-            assertEquals(Token.LString("boom"), lexer.nextToken())
+            assertAtom("boom".bytes(), lexer.nextToken())
             assertEquals(Token.RBracket, lexer.nextToken())
             assertEquals(Token.RBracket, lexer.nextToken())
             assertEquals(Token.EOF, lexer.nextToken())
+        }
+    }
+    companion object {
+        internal fun assertAtom(expected: ByteArray, token: Token) {
+            when (token) {
+                is Token.LString -> assertEquals(expected.string(), token.value.string())
+                else -> error("Expected LString")
+            }
         }
     }
 }

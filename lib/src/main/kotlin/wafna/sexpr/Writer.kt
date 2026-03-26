@@ -12,16 +12,6 @@ class WriterSettings {
     var dataFormat: DataFormat = DataFormat.Canonical
 }
 
-private const val lbracket = '['.code
-private const val rbracket = ']'.code
-private const val escape = '\\'.code
-private const val newLine = '\n'.code
-private const val carriageReturn = '\r'.code
-private const val tab = '\t'.code
-private const val bell = '\b'.code
-private const val quote = '"'.code
-private const val space = ' '.code
-
 private val CString = "\"([^\"\\\\]*|\\\\.)*\"".toRegex()
 
 /**
@@ -33,53 +23,56 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
         stream.write("${data.size}:".bytes())
         stream.write(data)
     }
+    fun writeByte(data: Byte) {
+        stream.write(data.toInt())
+    }
 
     fun writeCString(data: ByteArray) {
-        stream.write(quote)
+        writeByte(Bytes.quote)
         data.forEach { byte ->
-            when (val c = byte.toInt()) {
-                escape -> with(stream) {
-                    write(escape)
-                    write(escape)
+            when (val c = byte) {
+                Bytes.escape -> with(stream) {
+                    writeByte(Bytes.escape)
+                    writeByte(Bytes.escape)
                 }
 
-                newLine -> with(stream) {
-                    write(escape)
+                Bytes.newLine -> with(stream) {
+                    writeByte(Bytes.escape)
                     write('n'.code)
                 }
 
-                carriageReturn -> with(stream) {
-                    write(escape)
+                Bytes.carriageReturn -> with(stream) {
+                    writeByte(Bytes.escape)
                     write('r'.code)
                 }
 
-                tab -> with(stream) {
-                    write(escape)
+                Bytes.tab -> with(stream) {
+                    writeByte(Bytes.escape)
                     write('t'.code)
                 }
 
-                bell -> with(stream) {
-                    write(escape)
+                Bytes.bell -> with(stream) {
+                    writeByte(Bytes.escape)
                     write('b'.code)
                 }
 
-                quote -> with(stream) {
-                    write(escape)
-                    write(quote)
+                Bytes.quote -> with(stream) {
+                    writeByte(Bytes.escape)
+                    writeByte(Bytes.quote)
                 }
 
-                else -> stream.write(c)
+                else -> writeByte(c)
             }
         }
-        stream.write(quote)
+        writeByte(Bytes.quote)
     }
 
     fun node(s: SExpr, indent: Int) {
         fun doIndent() {
             if (settings.dataFormat != DataFormat.Canonical && null != settings.indent) {
-                stream.write(newLine)
+                writeByte(Bytes.newLine)
                 repeat(indent) {
-                    repeat(settings.indent!!) { stream.write(space) }
+                    repeat(settings.indent!!) { writeByte(Bytes.space) }
                 }
             }
         }
@@ -98,15 +91,15 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
 
             is SList -> {
                 doIndent()
-                stream.write(lbracket)
+                writeByte(Bytes.lbracket)
                 s.exprs.forEachIndexed { i, e ->
                     if (settings.dataFormat != DataFormat.Canonical)
-                        if (0 < i) stream.write(space)
+                        if (0 < i) writeByte(Bytes.space)
                         else doIndent()
                     node(e, indent + 1)
                 }
                 doIndent()
-                stream.write(rbracket)
+                writeByte(Bytes.rbracket)
             }
         }
     }
