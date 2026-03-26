@@ -38,22 +38,22 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
 
                 Bytes.newLine -> with(stream) {
                     writeByte(Bytes.escape)
-                    write('n'.code)
+                    writeByte(Bytes.n)
                 }
 
                 Bytes.carriageReturn -> with(stream) {
                     writeByte(Bytes.escape)
-                    write('r'.code)
+                    writeByte(Bytes.r)
                 }
 
                 Bytes.tab -> with(stream) {
                     writeByte(Bytes.escape)
-                    write('t'.code)
+                    writeByte(Bytes.t)
                 }
 
                 Bytes.bell -> with(stream) {
                     writeByte(Bytes.escape)
-                    write('b'.code)
+                    writeByte(Bytes.b)
                 }
 
                 Bytes.quote -> with(stream) {
@@ -77,7 +77,7 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
             }
         }
         when (s) {
-            is SNull -> stream.write('-'.code)
+            is SNull -> writeByte(Bytes.hyphen)
             is SBytes -> when (settings.dataFormat) {
                 DataFormat.Canonical -> writeBytes(s.data)
                 DataFormat.Readable -> if (s.data.first().toInt().toChar().isJavaIdentifierStart() && s.data.drop(1)

@@ -1,7 +1,7 @@
 package wafna.sexpr
 
 import java.nio.ByteBuffer
-import java.util.Stack
+import java.util.*
 
 /**
  * Produces tokens and byte arrays, the latter for run length encoded atoms.
@@ -19,11 +19,12 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
     fun take() {
         currentToken.push(input.take())
     }
+
     fun currentBytes() = ByteArray(currentToken.size, { currentToken.pop() }).apply { reverse() }
 
     override fun nextToken(): Token {
         currentToken.clear()
-        while (input.peek()?.let { ByteIs.whitespace(it) } ?: false)
+        while (input.peek()?.isWhitespace() == true)
             input.take()
         return when (val c = input.take()) {
             null -> Token.EOF
@@ -34,9 +35,9 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
             Bytes.hyphen -> Token.Null
             else -> {
                 // Accepts leading zeros.
-                if (ByteIs.digit(c)) {
+                if (c.isDigit()) {
                     parseNumber(c)
-                } else if (ByteIs.idStart(c)) {
+                } else if (c.isIdStart()) {
                     parseBare(c)
                 } else {
                     error("Unexpected character '$c'")
@@ -56,7 +57,7 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
     // Java identifiers.
     private fun parseBare(init: Byte): Token {
         currentToken.push(init)
-        while (input.peek()?.let { ByteIs.idPart(it) } ?: false) {
+        while (input.peek()?.isIdPart() == true) {
             take()
         }
         return Token.LString(currentBytes())
@@ -65,7 +66,7 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
     // prefix to RLE atom.
     private fun parseNumber(init: Byte): Token.LInteger {
         currentToken.push(init)
-        while (input.peek()?.let { ByteIs.digit(it) } ?: false) {
+        while (input.peek()?.isDigit() == true) {
             take()
         }
         val literal = currentBytes().string()
@@ -101,8 +102,8 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
 
                 else ->
                     // Ideally, only printable chars are left behind.
-                    if (!ByteIs.printable(c))
-                        error("Invalid control character: ${"%02x".format(c)}")
+                    if (!c.isPrintable())
+                        error("Invalid string literal character: ${"%02x".format(c)}")
                     else
                         take()
             }
