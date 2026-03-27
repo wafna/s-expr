@@ -28,11 +28,11 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
             input.take()
         return when (val c = input.take()) {
             null -> Token.EOF
-            Bytes.lbracket -> Token.LBracket
-            Bytes.rbracket -> Token.RBracket
-            Bytes.colon -> Token.Colon
-            Bytes.quote -> parseString()
-            Bytes.hyphen -> Token.Null
+            Bytes.LBRACKET -> Token.LBracket
+            Bytes.RBRACKET -> Token.RBracket
+            Bytes.COLON -> Token.Colon
+            Bytes.QUOTE -> parseString()
+            Bytes.HYPHEN -> Token.Null
             else -> {
                 // Accepts leading zeros.
                 if (c.isDigit()) {
@@ -81,20 +81,20 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
                 null ->
                     error("Unexpected EOF in string literal.")
 
-                Bytes.quote -> {
+                Bytes.QUOTE -> {
                     input.take()
                     break
                 }
 
-                Bytes.escape -> {
+                Bytes.ESCAPE -> {
                     input.take()
                     when (val e = input.peek()) {
-                        Bytes.escape -> currentToken.push(Bytes.escape)
-                        Bytes.t -> currentToken.push(Bytes.tab)
-                        Bytes.r -> currentToken.push(Bytes.carriageReturn)
-                        Bytes.n -> currentToken.push(Bytes.newLine)
-                        Bytes.b -> currentToken.push(Bytes.bell)
-                        Bytes.quote -> currentToken.push(Bytes.quote)
+                        Bytes.ESCAPE -> currentToken.push(Bytes.ESCAPE)
+                        Bytes.T -> currentToken.push(Bytes.TAB)
+                        Bytes.R -> currentToken.push(Bytes.CARRIAGE_RETURN)
+                        Bytes.N -> currentToken.push(Bytes.NEW_LINE)
+                        Bytes.B -> currentToken.push(Bytes.BELL)
+                        Bytes.QUOTE -> currentToken.push(Bytes.QUOTE)
                         else -> error("Invalid escape sequence: \\$e")
                     }
                     input.take()

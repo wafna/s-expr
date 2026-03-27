@@ -28,56 +28,56 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
     }
 
     fun writeCString(data: ByteArray) {
-        writeByte(Bytes.quote)
+        writeByte(Bytes.QUOTE)
         data.forEach { byte ->
             when (val c = byte) {
-                Bytes.escape -> with(stream) {
-                    writeByte(Bytes.escape)
-                    writeByte(Bytes.escape)
+                Bytes.ESCAPE -> with(stream) {
+                    writeByte(Bytes.ESCAPE)
+                    writeByte(Bytes.ESCAPE)
                 }
 
-                Bytes.newLine -> with(stream) {
-                    writeByte(Bytes.escape)
-                    writeByte(Bytes.n)
+                Bytes.NEW_LINE -> with(stream) {
+                    writeByte(Bytes.ESCAPE)
+                    writeByte(Bytes.N)
                 }
 
-                Bytes.carriageReturn -> with(stream) {
-                    writeByte(Bytes.escape)
-                    writeByte(Bytes.r)
+                Bytes.CARRIAGE_RETURN -> with(stream) {
+                    writeByte(Bytes.ESCAPE)
+                    writeByte(Bytes.R)
                 }
 
-                Bytes.tab -> with(stream) {
-                    writeByte(Bytes.escape)
-                    writeByte(Bytes.t)
+                Bytes.TAB -> with(stream) {
+                    writeByte(Bytes.ESCAPE)
+                    writeByte(Bytes.T)
                 }
 
-                Bytes.bell -> with(stream) {
-                    writeByte(Bytes.escape)
-                    writeByte(Bytes.b)
+                Bytes.BELL -> with(stream) {
+                    writeByte(Bytes.ESCAPE)
+                    writeByte(Bytes.B)
                 }
 
-                Bytes.quote -> with(stream) {
-                    writeByte(Bytes.escape)
-                    writeByte(Bytes.quote)
+                Bytes.QUOTE -> with(stream) {
+                    writeByte(Bytes.ESCAPE)
+                    writeByte(Bytes.QUOTE)
                 }
 
                 else -> writeByte(c)
             }
         }
-        writeByte(Bytes.quote)
+        writeByte(Bytes.QUOTE)
     }
 
     fun node(s: SExpr, indent: Int) {
         fun doIndent() {
             if (settings.dataFormat != DataFormat.Canonical && null != settings.indent) {
-                writeByte(Bytes.newLine)
+                writeByte(Bytes.NEW_LINE)
                 repeat(indent) {
-                    repeat(settings.indent!!) { writeByte(Bytes.space) }
+                    repeat(settings.indent!!) { writeByte(Bytes.SPACE) }
                 }
             }
         }
         when (s) {
-            is SNull -> writeByte(Bytes.hyphen)
+            is SNull -> writeByte(Bytes.HYPHEN)
             is SBytes -> when (settings.dataFormat) {
                 DataFormat.Canonical -> writeBytes(s.data)
                 DataFormat.Readable -> if (s.data.first().toInt().toChar().isJavaIdentifierStart() && s.data.drop(1)
@@ -91,15 +91,15 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
 
             is SList -> {
                 doIndent()
-                writeByte(Bytes.lbracket)
+                writeByte(Bytes.LBRACKET)
                 s.exprs.forEachIndexed { i, e ->
                     if (settings.dataFormat != DataFormat.Canonical)
-                        if (0 < i) writeByte(Bytes.space)
+                        if (0 < i) writeByte(Bytes.SPACE)
                         else doIndent()
                     node(e, indent + 1)
                 }
                 doIndent()
-                writeByte(Bytes.rbracket)
+                writeByte(Bytes.RBRACKET)
             }
         }
     }
