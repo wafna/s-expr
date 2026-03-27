@@ -7,7 +7,7 @@ fun readSExpr(input: ByteStream): SList =
     TreeBuilder().apply { readSExpr(input, this) }.finish()
 
 /**
- * Consume the parse output with the reader.
+ * Consume the parse output with the listener.
  */
 fun readSExpr(input: ByteStream, listener: Listener) {
     val lexer = lexer(input)

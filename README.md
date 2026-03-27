@@ -6,8 +6,12 @@ which contain arrays of bytes.
 Importantly, there is no restriction on the values of the bytes.
 This makes the format extremely efficient for all forms of data, esp. binary.
 
-This library is built for Kotlin and natively supports the List, Set, Pair, and Map collection types as well as enums.
+This library provides facilities for converting s-expressions to and from strings and
+converting data classes and enums to and from s-expressions.
+This library is built for Kotlin and inherently supports the Java primitives, strings, and 
+the List, Set, Pair, and Map collection types.
 There is also built-in support for multiple levels of sealed data class hierarchies. 
+This implementation also supports an explicit NULL atom, different from an empty atom.
 
 For literal s-expressions, the parser recognizes bare words (C style identifiers), 
 double-quoted strings (C style strings), and run length encoded atoms. 
@@ -101,10 +105,11 @@ fun main() {
 }
 ```
 
-## Features
+## Mapper Features
 
 * Supports **data classes** and **enums**.
 * Built-in support for multi-level sealed data class hierarchies.
 * Built-in support for the *List*, *Set*, *Pair*, and *Map* collection types.
 * Built-in support for the *Int*, *Long*, *Short*, *Double*, *Float*, *Char*, *String*, *Byte*, and *Boolean* atomic types
 * Custom mappers.
+
