@@ -53,13 +53,14 @@ val colorMapper = object : Mapper<Color> {
         atom(obj.blue.toString())
     }
 
-    // Use the reader DSL to narrow types and access list and atom data.
+    // Use the reader DSL to narrow types and access the data in lists and atoms.
     override fun fromSExpr(expr: SExpr): Color = expr.requireList().exprs.let { list ->
         fun field(index: Int) = list[index].requireBytes().asString()!!.toInt()
         Color(field(0), field(1), field(2))
     }
 }
 
+// Custom mapper for UUID, which only needs an atom.
 val uuidMapper = object : Mapper<UUID> {
     override fun toSExpr(obj: UUID): SExpr = SBytes(obj.toString().bytes())
     override fun fromSExpr(expr: SExpr): UUID = UUID.fromString(expr.requireBytes().data.string())
@@ -93,14 +94,14 @@ fun main() {
 
     // All conversion goes through the mappers object.
     val expr = mappers.toSExpr<Team>(team)
-    // Note that converting strings to and from s-expressions 
+    // Note that converting strings to and from s-expressions
     // and converting objects to and from s-expressions are separate.
     println(expr.showSExpr())
     // Recreate the object from the s-expression.
     val actualFromExpr = mappers.fromSExpr<Team>(expr)
     require(team == actualFromExpr)
     // Recreate the object from the canonicalized s-expression.
-    val actualFromBytes = mappers.fromSExpr<Team>(readSExpr(CharStream.from(expr.showSExpr())))
+    val actualFromBytes = mappers.fromSExpr<Team>(readSExpr(ByteStream.from(expr.showSExpr())))
     require(team == actualFromBytes)
 }
 ```
@@ -112,3 +113,6 @@ fun main() {
 * Built-in support for the *List*, *Set*, *Pair*, and *Map* collection types.
 * Built-in support for the *Int*, *Long*, *Short*, *Double*, *Float*, *Char*, *String*, *Byte*, and *Boolean* atomic types
 * Custom mappers.
+
+For serializing primitives, the *Mapper* uses the JVM native literal representations.
+This avoids endian impedance mismatches.

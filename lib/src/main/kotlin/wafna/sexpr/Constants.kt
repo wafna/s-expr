@@ -1,6 +1,6 @@
 package wafna.sexpr
 
-@Suppress("ConstPropertyName")
+//@Suppress("ConstPropertyName")
 internal object Bytes {
     const val lbracket = '['.code.toByte()
     const val rbracket = ']'.code.toByte()

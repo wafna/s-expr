@@ -41,6 +41,7 @@ val colorMapper = object : Mapper<Color> {
     }
 }
 
+// Custom mapper for UUID, which only needs an atom.
 val uuidMapper = object : Mapper<UUID> {
     override fun toSExpr(obj: UUID): SExpr = SBytes(obj.toString().bytes())
     override fun fromSExpr(expr: SExpr): UUID = UUID.fromString(expr.requireBytes().data.string())
