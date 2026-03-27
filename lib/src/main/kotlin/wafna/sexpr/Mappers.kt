@@ -123,7 +123,7 @@ class Mappers private constructor() {
     )
 
     // Find an adapter for this type or die in the attempt.
-    // This includes building adapters for parameterized types using their (reified) type arguments.
+    // This includes building adapters for collections using their (reified) type arguments.
     private fun adapterFor(kType: KType): Adapter<*> {
         val kClass = kType.classifier as KClass<*>
         return adapters[kClass] ?: when (kClass) {
