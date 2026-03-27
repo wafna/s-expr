@@ -10,7 +10,7 @@ import java.util.*
 // Domain objects.
 
 enum class Position {
-    Center, Guard, Forward
+    Goalie, Forward, Hacker, Tender, Winger
 }
 
 data class Player(val id: UUID, val number: Int, val position: Position)
@@ -21,6 +21,7 @@ sealed interface Jersey {
 }
 
 data class Team(
+    val name: String,
     val jerseys: List<Jersey>,
     val players: List<Player>,
 )
@@ -60,15 +61,16 @@ val mappers = Mappers {
 
 fun main() {
     val team = Team(
+        name = "Damocles",
         jerseys = listOf(
             Jersey.Home(listOf(Color.RED, Color.YELLOW)),
             Jersey.Away(listOf(Color.BLUE, Color.BLACK))
         ),
         players = listOf(
-            Player(UUID.randomUUID(), 42, Position.Center),
-            Player(UUID.randomUUID(), 11, Position.Guard),
-            Player(UUID.randomUUID(), 9, Position.Guard),
-            Player(UUID.randomUUID(), 14, Position.Forward),
+            Player(UUID.randomUUID(), 42, Position.Goalie),
+            Player(UUID.randomUUID(), 11, Position.Winger),
+            Player(UUID.randomUUID(), 9, Position.Tender),
+            Player(UUID.randomUUID(), 14, Position.Hacker ),
             Player(UUID.randomUUID(), 2, Position.Forward),
         )
     )
