@@ -43,7 +43,7 @@ private abstract class Adapter<T> : Mapper<T> {
  */
 class MapperRegistry internal constructor(val mappers: Mappers) {
     /**
-     * Create a mapper for a data class.
+     * Create a mapper for a data class or enum.
      */
     inline fun <reified T : Any> register() = mappers.register<T>(typeOf<T>())
     /**
@@ -194,6 +194,9 @@ class Mappers private constructor() {
         }
     }
 
+    /**
+     * Create an adapter for a data class.
+     */
     private fun <T : Any> createDataAdapter(kClass: KClass<T>): Adapter<T> {
         require(kClass.isData) { "Data class required: $kClass" }
         // Assume a one-to-one correspondence between the ctor and the object properties.
@@ -237,6 +240,9 @@ class Mappers private constructor() {
         }
     }
 
+    /**
+     * Creates adapters for a sealed hierarchy rooted at the given class.
+     */
     private fun registerSealed(kClass: KClass<*>) {
         require(kClass.isSealed) { "${kClass.qualifiedName} is not a sealed class." }
         val typeAdapters = buildMap {
@@ -272,6 +278,9 @@ class Mappers private constructor() {
         }
     }
 
+    /**
+     * Register an adapter for an enum.
+     */
     private fun <T : Any> registerEnum(kClass: KClass<T>) {
         val byName = buildMap {
             kClass.java.enumConstants.forEach {

@@ -3,11 +3,11 @@ package wafna.sexpr
 import kotlin.test.assertEquals
 import kotlin.test.fail
 
-fun parse(input: String) = readSExpr(CharStream.from(input))
+fun parse(input: String) = readSExpr(ByteStream.from(input))
 
 fun assertAtom(expected: SExpr, actual: String) {
     val expected = expected as SBytes
-    assertEquals(String(expected.data), actual)
+    assertEquals(expected.data.string(), actual)
 }
 
 fun compareSExpr(actual: SExpr, expected: SExpr) {

@@ -7,6 +7,6 @@ internal sealed interface Token {
     object Colon : Token
     object Null : Token
     // Literals
-    data class LString(val value: String) : Token
+    class LString(val value: ByteArray) : Token
     data class LInteger(val value: Int) : Token
 }

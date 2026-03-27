@@ -81,6 +81,6 @@ fun main() {
     val actualFromExpr = mappers.fromSExpr<Team>(expr)
     require(team == actualFromExpr)
     // Recreate the object from the canonicalized s-expression.
-    val actualFromBytes = mappers.fromSExpr<Team>(readSExpr(CharStream.from(expr.showSExpr())))
+    val actualFromBytes = mappers.fromSExpr<Team>(readSExpr(ByteStream.from(expr.showSExpr())))
     require(team == actualFromBytes)
 }
