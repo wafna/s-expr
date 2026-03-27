@@ -10,7 +10,7 @@ class ByteStream(private val iterator: Iterator<Byte>) {
     fun peek(): Byte? = if (null != peek) peek else {
         if (!iterator.hasNext()) null else iterator.next().also {
             peek = it
-            if (it == Bytes.newLine) {
+            if (it == Bytes.NEW_LINE) {
                 column = 0
                 ++line
             } else ++column
@@ -21,7 +21,7 @@ class ByteStream(private val iterator: Iterator<Byte>) {
         peek.also { peek = null }
     } else {
         if (!iterator.hasNext()) null else iterator.next().also {
-            if (it == Bytes.newLine) {
+            if (it == Bytes.NEW_LINE) {
                 column = 0
                 ++line
             } else ++column

@@ -1,22 +1,21 @@
 package wafna.sexpr
 
-@Suppress("ConstPropertyName")
 internal object Bytes {
-    const val lbracket = '['.code.toByte()
-    const val rbracket = ']'.code.toByte()
-    const val colon = ':'.code.toByte()
-    const val quote = '"'.code.toByte()
-    const val space = ' '.code.toByte()
-    const val hyphen = '-'.code.toByte()
-    const val escape = '\\'.code.toByte()
-    const val newLine = '\n'.code.toByte()
-    const val carriageReturn = '\r'.code.toByte()
-    const val tab = '\t'.code.toByte()
-    const val bell = '\b'.code.toByte()
-    const val n = 'n'.code.toByte()
-    const val r = 'r'.code.toByte()
-    const val t = 't'.code.toByte()
-    const val b = 'b'.code.toByte()
+    const val LBRACKET = '['.code.toByte()
+    const val RBRACKET = ']'.code.toByte()
+    const val COLON = ':'.code.toByte()
+    const val QUOTE = '"'.code.toByte()
+    const val SPACE = ' '.code.toByte()
+    const val HYPHEN = '-'.code.toByte()
+    const val ESCAPE = '\\'.code.toByte()
+    const val NEW_LINE = '\n'.code.toByte()
+    const val CARRIAGE_RETURN = '\r'.code.toByte()
+    const val TAB = '\t'.code.toByte()
+    const val BELL = '\b'.code.toByte()
+    const val N = 'n'.code.toByte()
+    const val R = 'r'.code.toByte()
+    const val T = 't'.code.toByte()
+    const val B = 'b'.code.toByte()
 }
 
 data class ByteAttrs(
