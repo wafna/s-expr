@@ -102,7 +102,7 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
 
                 else ->
                     // Ideally, only printable chars are left behind.
-                    if (!c.isPrintable())
+                    if (!c.isStringUnescaped())
                         error("Invalid string literal character: ${"%02x".format(c)}")
                     else
                         take()

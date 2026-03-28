@@ -28,7 +28,21 @@ class TestWriter {
     }
     @Test
     fun testShow() {
-        val s = buildSExpr { atom("a"); atom("b") }
-        assertEquals("[1:a1:b]", s.showSExpr())
+        buildSExpr { atom("a"); atom("b") }.let { s ->
+            val string = s.showSExpr()
+            assertEquals("[1:a1:b]", string)
+        }
+        buildSExpr { atom("a"); atom("b") }.let { s ->
+            val string = s.showSExpr { dataFormat = DataFormat.Readable }
+            assertEquals("[a b]", string)
+        }
+        buildSExpr { atom("a"); atom("b c"); atom("d") }.let { s ->
+            val string = s.showSExpr { dataFormat = DataFormat.Readable }
+            assertEquals("[a \"b c\" d]", string)
+        }
+        buildSExpr { atom("a"); atom("b c"); atom("d\u001e") }.let { s ->
+            val string = s.showSExpr { dataFormat = DataFormat.Readable }
+            assertEquals("[a \"b c\" 2:d\u001e]", string)
+        }
     }
 }
