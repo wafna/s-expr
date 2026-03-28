@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     `java-library`
+    `maven-publish`
 }
 
 repositories {
@@ -29,3 +30,5 @@ tasks.named<Test>("test") {
         displayGranularity = 0
     }
 }
+
+
