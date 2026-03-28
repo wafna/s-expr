@@ -1,3 +1,5 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     `java-library`
@@ -28,6 +30,17 @@ tasks.named<Test>("test") {
         events("PASSED", "SKIPPED", "FAILED", "STANDARD_ERROR")
         showStandardStreams = true
         displayGranularity = 0
+    }
+}
+
+repositories {
+    maven {
+        name = "GitHubPackages"
+        url = URI("https://maven.pkg.github.com/octocat/hello-world")
+        credentials {
+            username = System.getenv("GITHUB_ACTOR")
+            password = System.getenv("GITHUB_TOKEN")
+        }
     }
 }
 
