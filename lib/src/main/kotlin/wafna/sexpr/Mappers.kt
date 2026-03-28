@@ -190,7 +190,7 @@ class Mappers private constructor() {
         } else if (kClass.isSubclassOf(Enum::class)) {
             registerEnum(kClass)
         } else {
-            error("Data class or sealed class required.")
+            error("Data class, sealed class, or enum required.")
         }
     }
 
