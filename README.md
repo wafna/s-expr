@@ -89,7 +89,7 @@ fun main() {
             Player(UUID.randomUUID(), 42, Position.Goalie),
             Player(UUID.randomUUID(), 11, Position.Winger),
             Player(UUID.randomUUID(), 9, Position.Tender),
-            Player(UUID.randomUUID(), 14, Position.Hacker ),
+            Player(UUID.randomUUID(), 14, Position.Hacker),
             Player(UUID.randomUUID(), 2, Position.Forward),
         )
     )
@@ -97,16 +97,77 @@ fun main() {
     // All conversion goes through the mappers object.
     val expr = mappers.toSExpr<Team>(team)
     // Note that converting strings to and from s-expressions
-    // and converting objects to and from s-expressions are separate.
-    println(expr.showSExpr())
+    // and converting objects to and from s-expressions are distinct functions.
+    // In this example we modify the default settings (canonical) to make the output readable.
+    // In this mode, the writer will prefer, in order, bare atoms, then literal strings,
+    // then run length encoded atoms.
+    val pretty = expr.showSExpr {
+        dataFormat = DataFormat.Readable
+        indent = 2
+    }
+    println("Pretty: ${pretty.length} bytes.")
+    println(pretty)
     // Recreate the object from the s-expression.
     val actualFromExpr = mappers.fromSExpr<Team>(expr)
     require(team == actualFromExpr)
+    // The canonical representation uses run length encoded atoms exclusively with no added whitespace.
+    val canonical = expr.showSExpr()
+    println("Canonical: ${canonical.length} bytes.")
+    println(canonical)
     // Recreate the object from the canonicalized s-expression.
-    val actualFromBytes = mappers.fromSExpr<Team>(readSExpr(ByteStream.from(expr.showSExpr())))
+    val actualFromBytes = mappers.fromSExpr<Team>(readSExpr(ByteStream.from(canonical)))
     require(team == actualFromBytes)
 }
 ```
+<details>
+<summary>Pretty Output</summary>
+<pre>
+[
+  [name Damocles]
+  [jerseys
+    [
+      [Home
+        [
+          [colors
+            [
+              ["255" "0" "0"]
+              ["255" "255" "0"]]]]]
+      [Away
+        [
+          [colors
+            [
+              ["0" "0" "255"]
+              ["0" "0" "0"]]]]]]]
+  [players
+    [
+      [
+        [id "d54482ee-ad18-4728-bf42-a661ec03866f"]
+        [number "42"]
+        [position Goalie]]
+      [
+        [id "7d497dc7-2ea1-430a-acf2-ccbb8412d438"]
+        [number "11"]
+        [position Winger]]
+      [
+        [id "41fb047e-6fef-42d2-8fb1-d9474c5cb9ae"]
+        [number "9"]
+        [position Tender]]
+      [
+        [id "d0e5b8f0-f6b1-480b-a610-57cb9a9d8ad6"]
+        [number "14"]
+        [position Hacker]]
+      [
+        [id "2176fc44-fcf1-4d71-8b24-58edc936f081"]
+        [number "2"]
+        [position Forward]]]]]
+</pre>
+</details>
+
+<details>
+<summary>Canonical Output</summary>
+<pre>[[4:name8:Damocles][7:jerseys[[4:Home[[6:colors[[3:2551:01:0][3:2553:2551:0]]]]][4:Away[[6:colors[[1:01:03:255][1:01:01:0]]]]]]][7:players[[[2:id36:d54482ee-ad18-4728-bf42-a661ec03866f][6:number2:42][8:position6:Goalie]][[2:id36:7d497dc7-2ea1-430a-acf2-ccbb8412d438][6:number2:11][8:position6:Winger]][[2:id36:41fb047e-6fef-42d2-8fb1-d9474c5cb9ae][6:number1:9][8:position6:Tender]][[2:id36:d0e5b8f0-f6b1-480b-a610-57cb9a9d8ad6][6:number2:14][8:position6:Hacker]][[2:id36:2176fc44-fcf1-4d71-8b24-58edc936f081][6:number1:2][8:position7:Forward]]]]]
+</pre>
+</details>
 
 ## Mapper Features
 

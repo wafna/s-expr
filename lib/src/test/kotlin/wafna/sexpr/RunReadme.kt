@@ -78,12 +78,24 @@ fun main() {
     // All conversion goes through the mappers object.
     val expr = mappers.toSExpr<Team>(team)
     // Note that converting strings to and from s-expressions
-    // and converting objects to and from s-expressions are separate.
-    println(expr.showSExpr())
+    // and converting objects to and from s-expressions are distinct functions.
+    // In this example we modify the default settings (canonical) to make the output readable.
+    // In this mode, the writer will prefer, in order, bare atoms, then literal strings,
+    // then run length encoded atoms.
+    val pretty = expr.showSExpr {
+        dataFormat = DataFormat.Readable
+        indent = 2
+    }
+    println("Pretty: ${pretty.length} bytes.")
+    println(pretty)
     // Recreate the object from the s-expression.
     val actualFromExpr = mappers.fromSExpr<Team>(expr)
     require(team == actualFromExpr)
+    // The canonical representation uses run length encoded atoms exclusively with no added whitespace.
+    val canonical = expr.showSExpr()
+    println("Canonical: ${canonical.length} bytes.")
+    println(canonical)
     // Recreate the object from the canonicalized s-expression.
-    val actualFromBytes = mappers.fromSExpr<Team>(readSExpr(ByteStream.from(expr.showSExpr())))
+    val actualFromBytes = mappers.fromSExpr<Team>(readSExpr(ByteStream.from(canonical)))
     require(team == actualFromBytes)
 }
