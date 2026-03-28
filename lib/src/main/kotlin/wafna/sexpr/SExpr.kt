@@ -14,4 +14,3 @@ class SBytes(val data: ByteArray) : SAtom()
 object SNull : SAtom()
 
 class SList(val exprs: List<SExpr>) : SExpr
-

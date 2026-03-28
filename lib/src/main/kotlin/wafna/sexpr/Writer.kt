@@ -66,7 +66,7 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
         writeByte(Bytes.QUOTE)
     }
 
-    fun node(s: SExpr, indent: Int) {
+    fun node(s: SExpr, indent: Int, top: Boolean = false) {
         fun doIndent() {
             if (settings.dataFormat != DataFormat.Canonical && null != settings.indent) {
                 writeByte(Bytes.NEW_LINE)
@@ -91,20 +91,21 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
             }
 
             is SList -> {
-                doIndent()
+                if (! top) doIndent()
                 writeByte(Bytes.LBRACKET)
                 s.exprs.forEachIndexed { i, e ->
                     if (settings.dataFormat != DataFormat.Canonical)
-                        if (0 < i) writeByte(Bytes.SPACE)
-                        else doIndent()
+                        when (e) {
+                            is SAtom -> if (0 < i) writeByte(Bytes.SPACE)
+                            else -> {}
+                        }
                     node(e, indent + 1)
                 }
-                doIndent()
                 writeByte(Bytes.RBRACKET)
             }
         }
     }
-    node(this, 0)
+    node(this, 0, true)
     return stream
 }
 
