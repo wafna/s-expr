@@ -50,6 +50,7 @@ class TestLexer {
             assertEquals(Token.EOF, lexer.nextToken())
         }
     }
+
     companion object {
         internal fun assertAtom(expected: ByteArray, token: Token) {
             when (token) {

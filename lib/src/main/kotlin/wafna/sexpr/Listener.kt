@@ -1,6 +1,6 @@
 package wafna.sexpr
 
-import java.util.Stack
+import java.util.*
 
 /**
  * Listens to events from the parser, thus "reading" the tokenized input.
