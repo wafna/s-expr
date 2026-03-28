@@ -12,8 +12,6 @@ class WriterSettings {
     var dataFormat: DataFormat = DataFormat.Canonical
 }
 
-private val CString = "\"([^\"\\\\]*|\\\\.)*\"".toRegex()
-
 /**
  * Write an s-expression to an output stream.
  */
@@ -23,6 +21,7 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
         stream.write("${data.size}:".bytes())
         stream.write(data)
     }
+
     fun writeByte(data: Byte) {
         stream.write(data.toInt())
     }
@@ -84,9 +83,11 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
                         .all { it.toInt().toChar().isJavaIdentifierPart() }
                 ) {
                     stream.write(s.data)
-                } else if (s.data.none {
-                        it.toInt().toChar().isISOControl()
-                    }) writeCString(s.data) else writeBytes(s.data)
+                } else if (s.data.all { it.isStringUnescaped() || it.isEscapable() }) {
+                    writeCString(s.data)
+                } else {
+                    writeBytes(s.data)
+                }
             }
 
             is SList -> {
