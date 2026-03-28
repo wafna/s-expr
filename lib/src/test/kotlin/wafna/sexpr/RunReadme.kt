@@ -70,7 +70,7 @@ fun main() {
             Player(UUID.randomUUID(), 42, Position.Goalie),
             Player(UUID.randomUUID(), 11, Position.Winger),
             Player(UUID.randomUUID(), 9, Position.Tender),
-            Player(UUID.randomUUID(), 14, Position.Hacker ),
+            Player(UUID.randomUUID(), 14, Position.Hacker),
             Player(UUID.randomUUID(), 2, Position.Forward),
         )
     )

@@ -16,6 +16,7 @@ fun compareSExpr(actual: SExpr, expected: SExpr) {
             SNull -> {}
             else -> fail("Expected $expected to be null")
         }
+
         is SBytes -> when (expected) {
             is SBytes -> assertEquals(expected.data.toString(Charsets.UTF_8), actual.data.toString(Charsets.UTF_8))
             else -> fail("Incompatible: expected SAtom, got ${expected::class.simpleName}")

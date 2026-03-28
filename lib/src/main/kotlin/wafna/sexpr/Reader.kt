@@ -47,7 +47,7 @@ fun SExpr.requireBytes(msg: String = "Expected bytes."): SBytes = when (this) {
 }
 
 fun <T> SExpr.mapAtom(msg: String = "Expecting non-null atom.", f: SBytes.() -> T) = when (this) {
-    is  SBytes -> f(this)
+    is SBytes -> f(this)
     else -> error(msg)
 }
 
