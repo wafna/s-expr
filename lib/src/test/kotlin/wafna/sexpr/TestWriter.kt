@@ -40,6 +40,7 @@ class TestWriter {
             val string = s.showSExpr { dataFormat = DataFormat.Readable }
             assertEquals("[a \"b c\" d]", string)
         }
+        // Chooses bare, string, and rle appropriately.
         buildSExpr { atom("a"); atom("b c"); atom("d\u001e") }.let { s ->
             val string = s.showSExpr { dataFormat = DataFormat.Readable }
             assertEquals("[a \"b c\" 2:d\u001e]", string)
