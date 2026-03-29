@@ -11,22 +11,21 @@ fun readSExpr(input: ByteStream): SExpr =
  */
 fun readSExpr(input: ByteStream, listener: Listener) {
     val lexer = lexer(input)
-    require(lexer.nextToken() == Token.LBracket)
     while (true) {
         when (val token = lexer.nextToken()) {
             Token.LBracket -> listener.startList()
-            Token.RBracket -> if (listener.endList()) break
-            is Token.LString -> listener.atom(SBytes(token.value))
+            Token.RBracket -> listener.endList()
+            is Token.LString -> listener.atom(token.value)
             is Token.LInteger -> {
                 require(Token.Colon == lexer.nextToken())
                 val count = token.value
                 val bytes = lexer.nextBytes(count)
-                listener.atom(SBytes(bytes))
+                listener.atom(bytes)
             }
 
-            Token.Null -> listener.atom(SNull)
+            Token.Null -> listener.atom()
             Token.Colon -> error("Unexpected colon, ':'.")
-            Token.EOF -> error("Missing required end of list, ']'.")
+            Token.EOF -> break
         }
     }
 }

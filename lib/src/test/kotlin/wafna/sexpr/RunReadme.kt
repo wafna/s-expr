@@ -83,6 +83,7 @@ fun main() {
     )
 
     // All conversion goes through the mappers object.
+    // S-expressions can also be serialized directly to output streams.
     val expr = mappers.toSExpr<Team>(team)
     // Note that converting strings to and from s-expressions
     // and converting objects to and from s-expressions are distinct functions.

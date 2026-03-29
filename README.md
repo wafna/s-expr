@@ -48,10 +48,14 @@ data class Team(
 // Custom mapper for Color (which is not a data class).
 val colorMapper = object : Mapper<Color> {
     // Use the builder DSL to construct a list of the RGB values.
-    override fun toSExpr(obj: Color): SExpr = buildSExpr {
-        atom(obj.red.toString())
-        atom(obj.green.toString())
-        atom(obj.blue.toString())
+    override fun toSExpr(obj: Color, listener: Listener) {
+        with(listener) {
+            listener.list {
+                atom(SBytes(obj.red.toString().bytes()))
+                atom(SBytes(obj.green.toString().bytes()))
+                atom(SBytes(obj.blue.toString().bytes()))
+            }
+        }
     }
 
     // Use the reader DSL to narrow types and access the data in lists and atoms.
@@ -63,19 +67,22 @@ val colorMapper = object : Mapper<Color> {
 
 // Custom mapper for UUID, which only needs an atom.
 val uuidMapper = object : Mapper<UUID> {
-    override fun toSExpr(obj: UUID): SExpr = SBytes(obj.toString().bytes())
+    override fun toSExpr(obj: UUID, listener: Listener) {
+        listener.atom(SBytes(obj.toString().bytes()))
+    }
+
     override fun fromSExpr(expr: SExpr): UUID = UUID.fromString(expr.requireBytes().data.string())
 }
 
 // Register adapters in this "constructor" block.
 // Note: register dependent types before containing types.
 val mappers = Mappers {
-    register<Position>()
+    adapt<Position>()
     register(colorMapper)
     register(uuidMapper)
-    register<Player>()
-    register<Jersey>()
-    register<Team>()
+    adapt<Player>()
+    adapt<Jersey>()
+    adapt<Team>()
 }
 
 fun main() {
@@ -95,6 +102,7 @@ fun main() {
     )
 
     // All conversion goes through the mappers object.
+    // S-expressions can also be serialized directly to output streams.
     val expr = mappers.toSExpr<Team>(team)
     // Note that converting strings to and from s-expressions
     // and converting objects to and from s-expressions are distinct functions.
