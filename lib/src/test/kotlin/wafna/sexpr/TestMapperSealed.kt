@@ -14,8 +14,8 @@ class TestMapperSealed {
     @Test
     fun `multi-level sealed data class hierarchy`() {
         Mappers {
-            register<Level0>()
-            register<Data123>()
+            adapt<Level0>()
+            adapt<Data123>()
         }.apply {
             testObject(Data0("data-0"))
             testObject(Data1("data-1"))

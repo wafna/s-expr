@@ -51,12 +51,12 @@ val uuidMapper = object : Mapper<UUID> {
 // Register adapters in this "constructor" block.
 // Note: register dependent types before containing types.
 val mappers = Mappers {
-    register<Position>()
+    adapt<Position>()
     register(colorMapper)
     register(uuidMapper)
-    register<Player>()
-    register<Jersey>()
-    register<Team>()
+    adapt<Player>()
+    adapt<Jersey>()
+    adapt<Team>()
 }
 
 fun main() {

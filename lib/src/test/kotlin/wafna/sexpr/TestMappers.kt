@@ -55,19 +55,19 @@ class TestMappers {
     @Test
     fun primitives() {
         Mappers {
-            register<PrimitivesOnly>()
+            adapt<PrimitivesOnly>()
         }.testObject(PrimitivesOnly())
     }
     @Test
     fun listsOfPrimitives() {
         Mappers {
-            register<ListsOfPrimitives>()
+            adapt<ListsOfPrimitives>()
         }.testObject(listsOfPrimitives)
     }
     @Test
     fun listsOfListsOfPrimitives() {
         Mappers {
-            register<ListOfListOfPrimitives>()
+            adapt<ListOfListOfPrimitives>()
         }.testObject(
             ListOfListOfPrimitives(
                 listOf(
@@ -80,14 +80,14 @@ class TestMappers {
     @Test
     fun nestedObjects() {
         Mappers {
-            register<PrimitivesOnly>()
-            register<ListsOfPrimitives>()
-            register<NestedObjects>()
+            adapt<PrimitivesOnly>()
+            adapt<ListsOfPrimitives>()
+            adapt<NestedObjects>()
         }.testObject(NestedObjects(PrimitivesOnly(), listsOfPrimitives))
     }
     @Test
     fun nullables() {
-        Mappers { register<Nullables>() }.run {
+        Mappers { adapt<Nullables>() }.run {
             testObject(Nullables(null, null, null))
             testObject(Nullables("foo", 42, PI))
         }
@@ -96,7 +96,7 @@ class TestMappers {
     fun list() {
         Mappers().testObject(listOf(1, 2, 3))
         Mappers().testObject(List(3) { x -> List(3) { y -> x + y } })
-        Mappers { register<PrimitivesOnly>() }
+        Mappers { adapt<PrimitivesOnly>() }
             .testObject(List(4) { PrimitivesOnly() })
     }
     @Test
@@ -121,8 +121,8 @@ class TestMappers {
     @Test
     fun enumC() {
         Mappers {
-            register<EnumC>()
-            register<EnumContainerC>()
+            adapt<EnumC>()
+            adapt<EnumContainerC>()
         }.apply {
             EnumC.entries.forEach { testObject(it) }
             EnumC.entries.forEach { testObject(EnumContainerC(it)) }
@@ -131,8 +131,8 @@ class TestMappers {
     @Test
     fun enumP() {
         Mappers {
-            register<EnumP>()
-            register<EnumContainerP>()
+            adapt<EnumP>()
+            adapt<EnumContainerP>()
         }.apply {
             EnumP.entries.forEach { testObject(it) }
             EnumP.entries.forEach { testObject(EnumContainerP(it)) }
