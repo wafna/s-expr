@@ -12,6 +12,14 @@ interface Listener {
      * Signals whether the expression is complete.
      */
     fun endList(): Boolean
+    /**
+     * Signals whether the expression is complete.
+     */
+    fun list(f: () -> Unit): Boolean {
+        startList()
+        f()
+        return endList()
+    }
 }
 
 /**
@@ -35,7 +43,9 @@ class TreeBuilder : Listener {
         return sizes.isEmpty()
     }
 
-    fun finish(): SList = exprs.pop().also {
-        require(exprs.isEmpty()) { "Malformed expression: unclosed list(s)." }
-    }.requireList()
+    fun finish(): SExpr = exprs.pop().also {
+        require(exprs.isEmpty()) {
+            "Malformed expression: unclosed list(s)."
+        }
+    }
 }

@@ -12,7 +12,7 @@ import java.lang.reflect.Method
  * Converts objects to and from s-expressions or bytes.
  */
 interface Mapper<T> {
-    fun toSExpr(obj: T): SExpr
+    fun toSExpr(obj: T, listener: Listener)
     fun fromSExpr(expr: SExpr): T
 }
 
@@ -23,7 +23,7 @@ interface Mapper<T> {
  */
 private abstract class Adapter<T> : Mapper<T> {
     @Suppress("unused")
-    fun actualToSExpr(obj: T?): SExpr = obj?.let { toSExpr(it) } ?: SNull
+    fun actualToSExpr(obj: T?, listener: Listener) = obj?.let { toSExpr(it, listener) } ?: listener.atom(SNull)
     @Suppress("unused")
     fun actualFromSExpr(expr: SExpr): T? = if (expr == SNull) null else fromSExpr(expr)
 
@@ -31,10 +31,10 @@ private abstract class Adapter<T> : Mapper<T> {
     private fun fn(name: String, vararg parameterTypes: Class<*>): Method =
         javaClass.getMethod(name, *parameterTypes).apply { trySetAccessible() }
 
-    private val fnToSExpr = fn("actualToSExpr", Any::class.java)
+    private val fnToSExpr = fn("actualToSExpr", Any::class.java, Listener::class.java)
     private val fnFromSExpr = fn("actualFromSExpr", SExpr::class.java)
 
-    fun proxyToSExpr(obj: Any?): SExpr = fnToSExpr(this, obj) as SExpr
+    fun proxyToSExpr(obj: Any?, listener: Listener) = fnToSExpr(this, obj, listener)
     fun proxyFromSExpr(expr: SExpr): Any? = fnFromSExpr(this, expr)
 }
 
@@ -59,10 +59,21 @@ class Mappers private constructor() {
     /**
      * Render an object as an s-expression.
      */
-    inline fun <reified T> toSExpr(obj: T): SExpr = toSExpr(typeOf<T>(), obj)
+    inline fun <reified T> toSExpr(obj: T, listener: Listener) {
+        toSExpr(typeOf<T>(), obj, listener)
+    }
+
+    /**
+     * Constructs the s-expression in memory.
+     */
+    inline fun <reified T> toSExpr(obj: T): SExpr = TreeBuilder().apply {
+        toSExpr(obj, this)
+    }.finish()
 
     @PublishedApi
-    internal fun <T> toSExpr(kType: KType, obj: T): SExpr = adapterFor(kType).proxyToSExpr(obj)
+    internal fun <T> toSExpr(kType: KType, obj: T, listener: Listener) {
+        adapterFor(kType).proxyToSExpr(obj, listener)
+    }
 
     /**
      * Create an object from an s-expression.
@@ -77,61 +88,61 @@ class Mappers private constructor() {
         // Primitive adapters.
         // Collection types are built on the fly, below.
         Byte::class to object : Adapter<Byte?>() {
-            override fun toSExpr(obj: Byte?): SExpr =
-                obj?.let { o -> SBytes(ByteArray(1).also { it[0] = o }) } ?: SNull
+            override fun toSExpr(obj: Byte?, listener: Listener) =
+                listener.atom(obj?.let { o -> SBytes(ByteArray(1).also { it[0] = o }) } ?: SNull)
 
             override fun fromSExpr(expr: SExpr): Byte = expr.mapAtom { data[0] }
         },
         Char::class to object : Adapter<Char?>() {
-            override fun toSExpr(obj: Char?): SExpr =
-                obj?.let { SBytes(ByteArray(1).also { it[0] = obj.code.toByte() }) } ?: SNull
+            override fun toSExpr(obj: Char?, listener: Listener) =
+                listener.atom(obj?.let { SBytes(ByteArray(1).also { it[0] = obj.code.toByte() }) } ?: SNull)
 
             override fun fromSExpr(expr: SExpr): Char = expr.mapAtom { data[0].toInt().toChar() }
         },
         String::class to object : Adapter<String?>() {
-            override fun toSExpr(obj: String?): SExpr =
-                obj?.let { SBytes(obj.bytes()) } ?: SNull
+            override fun toSExpr(obj: String?, listener: Listener) =
+                listener.atom(obj?.let { SBytes(obj.bytes()) } ?: SNull)
 
             override fun fromSExpr(expr: SExpr): String? = expr.requireAtom().asString()
         },
         Boolean::class to object : Adapter<Boolean?>() {
-            override fun toSExpr(obj: Boolean?): SExpr =
-                obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
+            override fun toSExpr(obj: Boolean?, listener: Listener) =
+                listener.atom(obj?.let { SBytes(obj.toString().bytes()) } ?: SNull)
 
             override fun fromSExpr(expr: SExpr): Boolean? =
                 expr.requireAtom().asString()?.run { toBooleanStrictOrNull() ?: error("Expected Boolean, got $this.") }
         },
         Short::class to object : Adapter<Short?>() {
-            override fun toSExpr(obj: Short?): SExpr =
-                obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
+            override fun toSExpr(obj: Short?, listener: Listener) =
+                listener.atom(obj?.let { SBytes(obj.toString().bytes()) } ?: SNull)
 
             override fun fromSExpr(expr: SExpr): Short? =
                 expr.requireAtom().asString()?.run { toShortOrNull() ?: error("Expected Short, got $this.") }
         },
         Int::class to object : Adapter<Int?>() {
-            override fun toSExpr(obj: Int?): SExpr =
-                obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
+            override fun toSExpr(obj: Int?, listener: Listener) =
+                listener.atom(obj?.let { SBytes(obj.toString().bytes()) } ?: SNull)
 
             override fun fromSExpr(expr: SExpr): Int? =
                 expr.requireAtom().asString()?.run { toIntOrNull() ?: error("Expected Int, got $this.") }
         },
         Long::class to object : Adapter<Long?>() {
-            override fun toSExpr(obj: Long?): SExpr =
-                obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
+            override fun toSExpr(obj: Long?, listener: Listener) =
+                listener.atom(obj?.let { SBytes(obj.toString().bytes()) } ?: SNull)
 
             override fun fromSExpr(expr: SExpr): Long? =
                 expr.requireAtom().asString()?.run { toLongOrNull() ?: error("Expected Long, got $this") }
         },
         Double::class to object : Adapter<Double?>() {
-            override fun toSExpr(obj: Double?): SExpr =
-                obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
+            override fun toSExpr(obj: Double?, listener: Listener) =
+                listener.atom(obj?.let { SBytes(obj.toString().bytes()) } ?: SNull)
 
             override fun fromSExpr(expr: SExpr): Double? =
                 expr.requireAtom().asString()?.run { toDoubleOrNull() ?: error("Expected Double, got $this") }
         },
         Float::class to object : Adapter<Float?>() {
-            override fun toSExpr(obj: Float?): SExpr =
-                obj?.let { SBytes(obj.toString().bytes()) } ?: SNull
+            override fun toSExpr(obj: Float?, listener: Listener) =
+                listener.atom(obj?.let { SBytes(obj.toString().bytes()) } ?: SNull)
 
             override fun fromSExpr(expr: SExpr): Float? =
                 expr.requireAtom().asString()?.run { toFloatOrNull() ?: error("Expected Float, got $this") }
@@ -146,7 +157,7 @@ class Mappers private constructor() {
             List::class -> {
                 val itemType = kType.arguments.first().type!!
                 object : Adapter<List<*>>() {
-                    override fun toSExpr(obj: List<*>): SExpr = fromList(itemType, obj)
+                    override fun toSExpr(obj: List<*>, listener: Listener) = fromList(itemType, obj, listener)
                     override fun fromSExpr(expr: SExpr): List<*> = toList(itemType, expr.requireList())
                 }
             }
@@ -154,7 +165,7 @@ class Mappers private constructor() {
             Set::class -> {
                 val itemType = kType.arguments.first().type!!
                 object : Adapter<Set<*>>() {
-                    override fun toSExpr(obj: Set<*>): SExpr = fromSet(itemType, obj)
+                    override fun toSExpr(obj: Set<*>, listener: Listener) = fromSet(itemType, obj, listener)
                     override fun fromSExpr(expr: SExpr): Set<*> = toSet(itemType, expr.requireList())
                 }
             }
@@ -163,7 +174,7 @@ class Mappers private constructor() {
                 val type1 = kType.arguments[0].type!!
                 val type2 = kType.arguments[1].type!!
                 object : Adapter<Pair<*, *>>() {
-                    override fun toSExpr(obj: Pair<*, *>): SExpr = fromPair(type1, type2, obj)
+                    override fun toSExpr(obj: Pair<*, *>, listener: Listener) = fromPair(type1, type2, obj, listener)
                     override fun fromSExpr(expr: SExpr): Pair<*, *> = toPair(type1, type2, expr.requireList())
                 }
             }
@@ -172,7 +183,7 @@ class Mappers private constructor() {
                 val type1 = kType.arguments[0].type!!
                 val type2 = kType.arguments[1].type!!
                 object : Adapter<Map<*, *>>() {
-                    override fun toSExpr(obj: Map<*, *>): SExpr = fromMap(type1, type2, obj)
+                    override fun toSExpr(obj: Map<*, *>, listener: Listener) = fromMap(type1, type2, obj, listener)
                     override fun fromSExpr(expr: SExpr): Map<*, *> = toMap(type1, type2, expr.requireList())
                 }
             }
@@ -190,7 +201,7 @@ class Mappers private constructor() {
         @Suppress("UNCHECKED_CAST")
         val kClass = kType.classifier as KClass<T>
         adapters[kClass] = object : Adapter<T>() {
-            override fun toSExpr(obj: T): SExpr = mapper.toSExpr(obj)
+            override fun toSExpr(obj: T, listener: Listener) = mapper.toSExpr(obj, listener)
             override fun fromSExpr(expr: SExpr): T = mapper.fromSExpr(expr)
         }
     }
@@ -227,15 +238,18 @@ class Mappers private constructor() {
         val propertiesByName = kClass.memberProperties.associateBy { it.name }
         val paramsByName = ctor.parameters.associateBy { it.name }
         return object : Adapter<T>() {
-            override fun toSExpr(obj: T): SExpr = buildSExpr {
-                adaptersByName.forEach { (name, adapter) ->
+            override fun toSExpr(obj: T, listener: Listener) {
+                with(listener) {
                     list {
-                        atom(name.bytes())
-                        val property = propertiesByName[name]
-                            ?: error("${kClass.qualifiedName} has no property with name '$name'")
-                        val value = property.get(obj)
-                        val expr = adapter.proxyToSExpr(value)
-                        expr(expr)
+                        adaptersByName.forEach { (name, adapter) ->
+                            list {
+                                atom(SBytes(name.bytes()))
+                                val property = propertiesByName[name]
+                                    ?: error("${kClass.qualifiedName} has no property with name '$name'")
+                                val value = property.get(obj)
+                                adapter.proxyToSExpr(value, listener)
+                            }
+                        }
                     }
                 }
             }
@@ -276,11 +290,13 @@ class Mappers private constructor() {
         }
         if (!adapters.contains(kClass)) {
             adapters[kClass] = object : Adapter<Any>() {
-                override fun toSExpr(obj: Any): SExpr = buildSExpr {
-                    val objClass = obj::class
-                    val typeName = objClass.simpleName!!
-                    atom(typeName)
-                    expr(typeAdapters.getValue(typeName).proxyToSExpr(obj))
+                override fun toSExpr(obj: Any, listener: Listener) {
+                    listener.list {
+                        val objClass = obj::class
+                        val typeName = objClass.simpleName!!
+                        listener.atom(SBytes(typeName.bytes()))
+                        typeAdapters.getValue(typeName).proxyToSExpr(obj, listener)
+                    }
                 }
 
                 override fun fromSExpr(expr: SExpr): Any {
@@ -304,8 +320,8 @@ class Mappers private constructor() {
             }
         }
         adapters[kClass] = object : Adapter<T>() {
-            override fun toSExpr(obj: T): SExpr =
-                SBytes(obj.toString().bytes())
+            override fun toSExpr(obj: T, listener: Listener) =
+                listener.atom(SBytes(obj.toString().bytes()))
 
             override fun fromSExpr(expr: SExpr): T =
                 byName.getValue(expr.mapAtom { asString() }!!) as T
@@ -314,10 +330,10 @@ class Mappers private constructor() {
 
     // Collection handlers.
 
-    private fun fromList(itemType: KType, obj: List<*>): SList {
+    private fun fromList(itemType: KType, obj: List<*>, listener: Listener) {
         val adapter = adapterFor(itemType)
-        return buildSExpr {
-            obj.forEach { expr(adapter.proxyToSExpr(it)) }
+        listener.list {
+            obj.forEach { adapter.proxyToSExpr(it, listener) }
         }
     }
 
@@ -327,10 +343,10 @@ class Mappers private constructor() {
         expr.requireList().exprs.forEach { add(adapter.proxyFromSExpr(it)) }
     } as T
 
-    private fun fromSet(itemType: KType, obj: Set<*>): SList {
+    private fun fromSet(itemType: KType, obj: Set<*>, listener: Listener) {
         val adapter = adapterFor(itemType)
-        return buildSExpr {
-            obj.forEach { expr(adapter.proxyToSExpr(it)) }
+        listener.list {
+            obj.forEach { adapter.proxyToSExpr(it, listener) }
         }
     }
 
@@ -340,9 +356,11 @@ class Mappers private constructor() {
         expr.requireList().exprs.forEach { add(adapter.proxyFromSExpr(it)) }
     } as T
 
-    private fun fromPair(type1: KType, type2: KType, obj: Pair<*, *>): SList = buildSExpr {
-        expr(adapterFor(type1).proxyToSExpr(obj.first))
-        expr(adapterFor(type2).proxyToSExpr(obj.second))
+    private fun fromPair(type1: KType, type2: KType, obj: Pair<*, *>, listener: Listener) {
+        listener.list {
+            adapterFor(type1).proxyToSExpr(obj.first, listener)
+            adapterFor(type2).proxyToSExpr(obj.second, listener)
+        }
     }
 
     private fun <T> toPair(type1: KType, type2: KType, expr: SList): T {
@@ -352,11 +370,13 @@ class Mappers private constructor() {
         return Pair(p, q) as T
     }
 
-    private fun fromMap(type1: KType, type2: KType, obj: Map<*, *>): SList = buildSExpr {
-        obj.forEach {
-            list {
-                expr(adapterFor(type1).proxyToSExpr(it.key))
-                expr(adapterFor(type2).proxyToSExpr(it.value))
+    private fun fromMap(type1: KType, type2: KType, obj: Map<*, *>, listener: Listener) {
+        listener.list {
+            obj.forEach {
+                listener.list {
+                    adapterFor(type1).proxyToSExpr(it.key, listener)
+                    adapterFor(type2).proxyToSExpr(it.value, listener)
+                }
             }
         }
     }

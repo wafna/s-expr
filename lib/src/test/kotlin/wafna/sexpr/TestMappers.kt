@@ -142,10 +142,14 @@ class TestMappers {
     fun custom() {
         val mappers = Mappers {
             register(object : Mapper<Color> {
-                override fun toSExpr(obj: Color): SExpr = buildSExpr {
-                    atom(obj.red.toString())
-                    atom(obj.green.toString())
-                    atom(obj.blue.toString())
+                override fun toSExpr(obj: Color, listener: Listener) {
+                    with(listener) {
+                        list {
+                            atom(SBytes(obj.red.toString().bytes()))
+                            atom(SBytes(obj.green.toString().bytes()))
+                            atom(SBytes(obj.blue.toString().bytes()))
+                        }
+                    }
                 }
 
                 override fun fromSExpr(expr: SExpr): Color = expr.requireList().let { list ->

@@ -29,10 +29,14 @@ data class Team(
 // Custom mapper for Color (which is not a data class).
 val colorMapper = object : Mapper<Color> {
     // Use the builder DSL to construct a list of the RGB values.
-    override fun toSExpr(obj: Color): SExpr = buildSExpr {
-        atom(obj.red.toString())
-        atom(obj.green.toString())
-        atom(obj.blue.toString())
+    override fun toSExpr(obj: Color, listener: Listener) {
+        with(listener) {
+            listener.list {
+                atom(SBytes(obj.red.toString().bytes()))
+                atom(SBytes(obj.green.toString().bytes()))
+                atom(SBytes(obj.blue.toString().bytes()))
+            }
+        }
     }
 
     // Use the reader DSL to narrow types and access the data in lists and atoms.
@@ -44,7 +48,10 @@ val colorMapper = object : Mapper<Color> {
 
 // Custom mapper for UUID, which only needs an atom.
 val uuidMapper = object : Mapper<UUID> {
-    override fun toSExpr(obj: UUID): SExpr = SBytes(obj.toString().bytes())
+    override fun toSExpr(obj: UUID, listener: Listener) {
+        listener.atom(SBytes(obj.toString().bytes()))
+    }
+
     override fun fromSExpr(expr: SExpr): UUID = UUID.fromString(expr.requireBytes().data.string())
 }
 

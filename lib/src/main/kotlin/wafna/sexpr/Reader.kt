@@ -3,7 +3,7 @@ package wafna.sexpr
 /**
  * Translate the input into an s-expression.
  */
-fun readSExpr(input: ByteStream): SList =
+fun readSExpr(input: ByteStream): SExpr =
     TreeBuilder().apply { readSExpr(input, this) }.finish()
 
 /**
