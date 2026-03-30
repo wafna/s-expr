@@ -34,7 +34,10 @@ private abstract class Adapter<T> : Mapper<T> {
     private val fnToSExpr = fn("actualToSExpr", Any::class.java, Listener::class.java)
     private val fnFromSExpr = fn("actualFromSExpr", SExpr::class.java)
 
-    fun proxyToSExpr(obj: Any?, listener: Listener) = fnToSExpr(this, obj, listener)
+    fun proxyToSExpr(obj: Any?, listener: Listener) {
+        fnToSExpr(this, obj, listener)
+    }
+
     fun proxyFromSExpr(expr: SExpr): Any? = fnFromSExpr(this, expr)
 }
 
@@ -70,20 +73,22 @@ class Mappers private constructor() {
         toSExpr(obj, this)
     }.finish()
 
-    @PublishedApi
-    internal fun <T> toSExpr(kType: KType, obj: T, listener: Listener) {
-        adapterFor(kType).proxyToSExpr(obj, listener)
-    }
-
     /**
      * Create an object from an s-expression.
      */
     inline fun <reified T> fromSExpr(expr: SExpr): T = fromSExpr(typeOf<T>(), expr)
 
+    // These PublishedApis allow other things to be private (or, at least, unannotated).
+
+    @PublishedApi
+    internal fun <T> toSExpr(kType: KType, obj: T, listener: Listener) = adapterFor(kType).proxyToSExpr(obj, listener)
+
     @PublishedApi
     @Suppress("UNCHECKED_CAST")
     internal fun <T> fromSExpr(kType: KType, expr: SExpr): T = adapterFor(kType).proxyFromSExpr(expr) as T
 
+    // Adapters for primitives, data classes, enums, and custom types.
+    // Collection adapters are created on the fly using their parameterized types.
     private val adapters = mutableMapOf<KClass<*>, Adapter<*>>(
         // Primitive adapters.
         // Collection types are built on the fly, below.
@@ -271,7 +276,7 @@ class Mappers private constructor() {
     }
 
     /**
-     * Creates adapters for a sealed hierarchy rooted at the given class.
+     * Create an adapter for a sealed hierarchy rooted at the given class.
      */
     private fun registerSealed(kClass: KClass<*>) {
         require(kClass.isSealed) { "${kClass.qualifiedName} is not a sealed class." }
