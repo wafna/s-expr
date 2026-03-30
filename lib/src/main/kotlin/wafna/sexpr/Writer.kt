@@ -91,7 +91,7 @@ fun SExpr.write(stream: OutputStream, settings: WriterSettings.() -> Unit = {}):
             }
 
             is SList -> {
-                if (! top) doIndent()
+                if (!top) doIndent()
                 writeByte(Bytes.LBRACKET)
                 s.exprs.forEachIndexed { i, e ->
                     if (settings.dataFormat != DataFormat.Canonical)

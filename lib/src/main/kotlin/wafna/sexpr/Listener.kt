@@ -1,5 +1,6 @@
 package wafna.sexpr
 
+import java.io.OutputStream
 import java.util.*
 
 /**
@@ -7,11 +8,21 @@ import java.util.*
  */
 interface Listener {
     fun atom(e: SAtom)
+    fun atom(bytes: ByteArray) = atom(SBytes(bytes))
+    fun atom() = atom(SNull)
     fun startList()
     /**
      * Signals whether the expression is complete.
      */
-    fun endList(): Boolean
+    fun endList()
+    /**
+     * Signals whether the expression is complete.
+     */
+    fun list(f: () -> Unit) {
+        startList()
+        f()
+        endList()
+    }
 }
 
 /**
@@ -28,14 +39,37 @@ class TreeBuilder : Listener {
         sizes.push(exprs.size)
     }
 
-    override fun endList(): Boolean {
+    override fun endList() {
         val size = exprs.size - sizes.pop()
         val nodes = List(size) { exprs.pop() }.reversed()
         exprs.push(SList(nodes))
-        return sizes.isEmpty()
+        sizes.isEmpty()
     }
 
-    fun finish(): SList = exprs.pop().also {
-        require(exprs.isEmpty()) { "Malformed expression: unclosed list(s)." }
-    }.requireList()
+    fun finish(): SExpr = exprs.pop().also {
+        require(exprs.isEmpty()) {
+            "Malformed expression: unclosed list(s)."
+        }
+    }
+}
+
+class StreamSink(private val stream: OutputStream) : Listener {
+    override fun atom(e: SAtom) {
+        when (e) {
+            is SNull -> stream.write(Bytes.HYPHEN.toInt())
+            is SBytes -> {
+                stream.write(e.data.size.toString().bytes())
+                stream.write(Bytes.COLON.toInt())
+                stream.write(e.data)
+            }
+        }
+    }
+
+    override fun startList() {
+        stream.write(Bytes.LBRACKET.toInt())
+    }
+
+    override fun endList() {
+        stream.write(Bytes.RBRACKET.toInt())
+    }
 }
