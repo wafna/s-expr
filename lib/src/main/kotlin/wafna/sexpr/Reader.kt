@@ -13,8 +13,8 @@ fun readSExpr(input: ByteStream, listener: Listener) {
     val lexer = lexer(input)
     while (true) {
         when (val token = lexer.nextToken()) {
-            Token.LBracket -> listener.startList()
-            Token.RBracket -> listener.endList()
+            Token.ListStart -> listener.startList()
+            Token.ListEnd -> listener.endList()
             is Token.LString -> listener.atom(token.value)
             is Token.LInteger -> {
                 require(Token.Colon == lexer.nextToken())

@@ -28,8 +28,8 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
             input.take()
         return when (val c = input.take()) {
             null -> Token.EOF
-            Bytes.LBRACKET -> Token.LBracket
-            Bytes.RBRACKET -> Token.RBracket
+            Bytes.LBRACKET -> Token.ListStart
+            Bytes.RBRACKET -> Token.ListEnd
             Bytes.COLON -> Token.Colon
             Bytes.QUOTE -> parseString()
             Bytes.HYPHEN -> Token.Null
