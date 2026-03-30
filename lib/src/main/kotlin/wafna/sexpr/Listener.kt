@@ -53,6 +53,9 @@ class TreeBuilder : Listener {
     }
 }
 
+/**
+ * Writes the literal s-expression to the output stream.
+ */
 class StreamSink(private val stream: OutputStream) : Listener {
     override fun atom(e: SAtom) {
         when (e) {
