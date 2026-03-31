@@ -14,7 +14,8 @@ fun readSExpr(input: ByteStream, listener: Listener) {
     while (true) {
         when (val token = lexer.nextToken()) {
             Token.ListStart -> listener.startList()
-            Token.ListEnd -> listener.endList()
+            Token.ListEnd ->
+                listener.endList()
             is Token.LString -> listener.atom(token.value)
             is Token.LInteger -> {
                 require(Token.Colon == lexer.nextToken())

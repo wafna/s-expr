@@ -24,7 +24,7 @@ abstract class Listener {
  */
 class TreeBuilder : Listener() {
     val exprs = Stack<SExpr>()
-    val sizes = Stack<Int>().apply { push(0) }
+    val sizes = Stack<Int>()
     override fun atom(e: SAtom) {
         exprs.push(e)
     }
@@ -34,16 +34,22 @@ class TreeBuilder : Listener() {
     }
 
     override fun endList() {
+        if (sizes.isEmpty())
+            throw SExprError.Type("list underflow.")
         val size = exprs.size - sizes.pop()
         val nodes = List(size) { exprs.pop() }.reversed()
         exprs.push(SList(nodes))
         sizes.isEmpty()
     }
 
-    fun finish(): SExpr = exprs.pop().also {
-        if(!exprs.isEmpty()) {
+    fun finish(): SExpr {
+        if (sizes.isNotEmpty())
+            throw SExprError.EOF("unclosed list(s).")
+        val expr = exprs.pop()
+        if (!exprs.isEmpty()) {
             throw SExprError.EOF("unclosed list(s).")
         }
+        return expr
     }
 }
 
