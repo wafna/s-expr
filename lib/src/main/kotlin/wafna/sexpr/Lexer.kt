@@ -85,7 +85,8 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
 
                 Bytes.ESCAPE -> {
                     input.take()
-                    when (val e = input.peek()) {
+                    when (val e = input.take()) {
+                        null -> error("Unexpected EOF in string literal.")
                         Bytes.ESCAPE -> currentToken.push(Bytes.ESCAPE)
                         Bytes.T -> currentToken.push(Bytes.TAB)
                         Bytes.R -> currentToken.push(Bytes.CARRIAGE_RETURN)
@@ -94,7 +95,6 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
                         Bytes.QUOTE -> currentToken.push(Bytes.QUOTE)
                         else -> error("Invalid escape sequence: \\$e")
                     }
-                    input.take()
                 }
 
                 else if c.isStringUnescaped() ->
