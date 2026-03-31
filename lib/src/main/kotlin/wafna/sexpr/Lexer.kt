@@ -28,8 +28,8 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
             input.take()
         return when (val c = input.take()) {
             null -> Token.EOF
-            Bytes.LBRACKET -> Token.LBracket
-            Bytes.RBRACKET -> Token.RBracket
+            Bytes.LBRACKET -> Token.ListStart
+            Bytes.RBRACKET -> Token.ListEnd
             Bytes.COLON -> Token.Colon
             Bytes.QUOTE -> parseString()
             Bytes.HYPHEN -> Token.Null
@@ -48,13 +48,11 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
 
     override fun nextBytes(count: Int): ByteArray = ByteBuffer.allocate(count).apply {
         repeat(count) { nth ->
-            put(
-                input.take() ?: error("Unexpected EOF in byte $nth of run length encoded atom.")
-            )
+            put(input.take() ?: error("Unexpected EOF in byte $nth of run length encoded atom."))
         }
     }.array()
 
-    // Java identifiers.
+    // C style identifiers.
     private fun parseBare(init: Byte): Token {
         currentToken.push(init)
         while (input.peek()?.isIdPart() == true) {
@@ -66,15 +64,14 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
     // prefix to RLE atom.
     private fun parseNumber(init: Byte): Token.LInteger {
         currentToken.push(init)
-        while (input.peek()?.isDigit() == true) {
+        while (input.peek()?.isDigit() == true)
             take()
-        }
         val literal = currentBytes().string()
         return literal.toIntOrNull()?.let { lit -> Token.LInteger(lit) }
             ?: error("Invalid numeric literal: $literal")
     }
 
-    // TODO incomplete: should support C strings exactly.
+    // C style strings.
     private fun parseString(): Token {
         while (true) {
             when (val c = input.peek()) {
@@ -88,7 +85,8 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
 
                 Bytes.ESCAPE -> {
                     input.take()
-                    when (val e = input.peek()) {
+                    when (val e = input.take()) {
+                        null -> error("Unexpected EOF in string literal.")
                         Bytes.ESCAPE -> currentToken.push(Bytes.ESCAPE)
                         Bytes.T -> currentToken.push(Bytes.TAB)
                         Bytes.R -> currentToken.push(Bytes.CARRIAGE_RETURN)
@@ -97,15 +95,13 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
                         Bytes.QUOTE -> currentToken.push(Bytes.QUOTE)
                         else -> error("Invalid escape sequence: \\$e")
                     }
-                    input.take()
                 }
 
+                else if c.isStringUnescaped() ->
+                    take()
+
                 else ->
-                    // Ideally, only printable chars are left behind.
-                    if (!c.isStringUnescaped())
-                        error("Invalid string literal character: ${"%02x".format(c)}")
-                    else
-                        take()
+                    error("Invalid string literal character: ${"%02x".format(c)}")
             }
         }
         return Token.LString(currentBytes())
