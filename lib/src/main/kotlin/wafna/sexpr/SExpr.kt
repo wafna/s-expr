@@ -16,7 +16,7 @@ object SNull : SAtom()
 class SList(val exprs: List<SExpr>) : SExpr
 
 sealed class SExprError(msg: String, cause: Throwable? = null) : Exception(msg, cause) {
-    // For syntactically invalid literal s-expressions.
+    // For syntactically invalid s-expressions.
     class Parse(line: Int, column: Int, reason: String) : SExprError("ERROR ($line, $column): $reason")
     // For incorrectly structured s-expressions.
     class Type(msg: String, cause: Throwable? = null) : SExprError(msg, cause)
