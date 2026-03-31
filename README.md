@@ -18,9 +18,20 @@ double-quoted strings (C style strings), and run length encoded atoms.
 This implementation uses square brackets instead of parentheses for literal s-expressions 
 to reduce strain on the shift key.
 
+## Mapper Features
+
+* Converts **data classes** and **enums** to and from s-expressions.
+* Built-in support for **multi-level sealed hierarchies**.
+* Built-in support for the **List**, **Set**, **Pair**, and **Map** collection types.
+* Built-in support for the **Int**, **Long**, **Short**, **Double**, **Float**, **Char**, **String**, **Byte**, and **Boolean** types
+* Custom mappers.
+
+For serializing Booleans and numeric primitives, the *Mapper* uses the JVM native literal representations.
+This avoids endian impedance mismatches.
+
 ## Quick Start
 
-Convert objects to s-expressions and back again using the ***mapping*** facility.
+Convert objects to s-expressions and back again using the *Mapper*.
 
 ```kotlin
 import java.awt.Color
@@ -126,6 +137,7 @@ fun main() {
     require(team == actualFromBytes)
 }
 ```
+See the outputs, below.
 <details>
 <summary>Pretty Output</summary>
 <pre>
@@ -176,13 +188,28 @@ fun main() {
 </pre>
 </details>
 
-## Mapper Features
+## Notes
 
-* Supports **data classes** and **enums**.
-* Built-in support for multi-level sealed data class hierarchies.
-* Built-in support for the *List*, *Set*, *Pair*, and *Map* collection types.
-* Built-in support for the *Int*, *Long*, *Short*, *Double*, *Float*, *Char*, *String*, *Byte*, and *Boolean* atomic types
-* Custom mappers.
+### Mapper
 
-For serializing Booleans and numeric primitives, the *Mapper* uses the JVM native literal representations.
-This avoids endian impedance mismatches.
+This implementation keeps conversion to and from objects separate from conversion to and from bytes 
+without sacrificing efficiency by using the Listener strategy.
+The *Listener* class listens to parse events, namely the discovery of atoms and the beginning and ending of lists.
+For example, when using the mapper to convert an object to an s-expression, a listener is specified.
+Implementations that construct the s-expression in memory (*TreeBuilder*) and that 
+write the s-expression to an output stream (*StreamSink*) are provided.
+In the former case, the complete s-expression is retrieved from the *TreeBuilder*.
+
+This scheme avoids the overhead of intermediate representation and, potentially, any storage costs
+if the output is streamed, directly.
+This scheme can also be used to support SAX-like reading, e.g. for object streams. 
+
+The *Listener* class can also be used to construct s-expressions manually.
+This is, essentially, what the *Mapper* does.
+Having discovered the types of an object's fields, it instructs the listener to create a list of its fields.
+
+### Reflection
+
+The Kotlin `reflect` library is required.
+Kotlin's reflection facility is extremely powerful, which allows for the discovery of all the data classes in 
+a sealed hierarchy.

@@ -15,10 +15,21 @@ internal interface Lexer {
  * Create a Lexer for an input.
  */
 internal fun lexer(input: ByteStream): Lexer = object : Lexer {
+    var line = 0
+    var column = 0
     val currentToken = Stack<Byte>()
     fun take() {
-        currentToken.push(input.take())
+        val b = input.take()
+        if (b == Bytes.NEW_LINE) {
+            line++
+            column = 0
+        } else {
+            column++
+        }
+        currentToken.push(b)
     }
+
+    private fun error(msg: String): Nothing = throw SExprError.Token(line, column, msg)
 
     fun currentBytes() = ByteArray(currentToken.size, { currentToken.pop() }).apply { reverse() }
 

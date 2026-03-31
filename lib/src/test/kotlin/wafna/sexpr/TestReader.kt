@@ -2,6 +2,7 @@ package wafna.sexpr
 
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class TestReader {
     @Test
@@ -45,5 +46,17 @@ class TestReader {
             assertEquals(exprs.size, 1)
             assertAtom(exprs[0], "")
         }
+    }
+    @Test
+    fun testErrors() {
+        assertThrows<SExprError.Type> { parse("]") }
+        assertThrows<SExprError.Type> { parse("a]") }
+        assertThrows<SExprError.Type> { parse("[]]") }
+        assertThrows<SExprError.Type> { parse("[a b]]") }
+        assertThrows<SExprError.EOF> { parse("[") }
+        assertThrows<SExprError.EOF> { parse("[a") }
+        assertThrows<SExprError.EOF> { parse("[[]") }
+        assertThrows<SExprError.EOF> { parse("[[a]") }
+        assertThrows<SExprError.EOF> { parse("[[a]") }
     }
 }

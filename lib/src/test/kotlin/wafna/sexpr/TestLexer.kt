@@ -2,6 +2,7 @@ package wafna.sexpr
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import org.junit.jupiter.api.assertThrows
 
 class TestLexer {
     internal fun withLexer(input: String, f: (Lexer) -> Unit) =
@@ -48,6 +49,16 @@ class TestLexer {
             assertEquals(Token.ListEnd, lexer.nextToken())
             assertEquals(Token.ListEnd, lexer.nextToken())
             assertEquals(Token.EOF, lexer.nextToken())
+        }
+        withLexer("*") { lexer ->
+            assertThrows<SExprError.Token> {
+                lexer.nextToken()
+            }
+        }
+        withLexer("\"") { lexer ->
+            assertThrows<SExprError.Token> {
+                lexer.nextToken()
+            }
         }
     }
 

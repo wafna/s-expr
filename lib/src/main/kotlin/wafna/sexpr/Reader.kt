@@ -13,9 +13,15 @@ fun readSExpr(input: ByteStream, listener: Listener) {
     val lexer = lexer(input)
     while (true) {
         when (val token = lexer.nextToken()) {
-            Token.ListStart -> listener.startList()
-            Token.ListEnd -> listener.endList()
-            is Token.LString -> listener.atom(token.value)
+            Token.ListStart ->
+                listener.startList()
+
+            Token.ListEnd ->
+                listener.endList()
+
+            is Token.LString ->
+                listener.atom(token.value)
+
             is Token.LInteger -> {
                 require(Token.Colon == lexer.nextToken())
                 val count = token.value
@@ -23,9 +29,14 @@ fun readSExpr(input: ByteStream, listener: Listener) {
                 listener.atom(bytes)
             }
 
-            Token.Null -> listener.atom()
-            Token.Colon -> error("Unexpected colon, ':'.")
-            Token.EOF -> break
+            Token.Null ->
+                listener.atom()
+
+            Token.Colon ->
+                error("Unexpected colon, ':'.")
+
+            Token.EOF ->
+                break
         }
     }
 }
@@ -60,3 +71,5 @@ fun SAtom.asString(): String? = when (this) {
     is SBytes -> data.string()
     is SNull -> null
 }
+
+private fun error(msg: String): Nothing = throw SExprError.Type(msg)

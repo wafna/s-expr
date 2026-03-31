@@ -114,7 +114,7 @@ class TestMappers {
     }
     @Test
     fun arrayNotSupported() {
-        assertThrows<Throwable> {
+        assertThrows<SExprError.Mapper> {
             Mappers().testObject(arrayOf(1, 2, 3, 4))
         }
     }

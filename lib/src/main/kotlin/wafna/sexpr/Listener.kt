@@ -6,18 +6,12 @@ import java.util.*
 /**
  * Listens to events from the parser, thus "reading" the tokenized input.
  */
-interface Listener {
-    fun atom(e: SAtom)
+abstract class Listener {
+    abstract fun atom(e: SAtom)
+    internal abstract fun startList()
+    internal abstract fun endList()
     fun atom(bytes: ByteArray) = atom(SBytes(bytes))
     fun atom() = atom(SNull)
-    fun startList()
-    /**
-     * Signals whether the expression is complete.
-     */
-    fun endList()
-    /**
-     * Signals whether the expression is complete.
-     */
     fun list(f: () -> Unit) {
         startList()
         f()
@@ -28,9 +22,9 @@ interface Listener {
 /**
  * Builds the full expression tree from the parser.
  */
-class TreeBuilder : Listener {
+class TreeBuilder : Listener() {
     val exprs = Stack<SExpr>()
-    val sizes = Stack<Int>().apply { push(0) }
+    val sizes = Stack<Int>()
     override fun atom(e: SAtom) {
         exprs.push(e)
     }
@@ -40,20 +34,26 @@ class TreeBuilder : Listener {
     }
 
     override fun endList() {
+        if (sizes.isEmpty())
+            throw SExprError.Type("list underflow.")
         val size = exprs.size - sizes.pop()
         val nodes = List(size) { exprs.pop() }.reversed()
         exprs.push(SList(nodes))
         sizes.isEmpty()
     }
 
-    fun finish(): SExpr = exprs.pop().also {
-        require(exprs.isEmpty()) {
-            "Malformed expression: unclosed list(s)."
+    fun finish(): SExpr {
+        if (sizes.isNotEmpty())
+            throw SExprError.EOF("unclosed list(s).")
+        val expr = exprs.pop()
+        if (!exprs.isEmpty()) {
+            throw SExprError.EOF("unclosed list(s).")
         }
+        return expr
     }
 }
 
-class StreamSink(private val stream: OutputStream) : Listener {
+class StreamSink(private val stream: OutputStream) : Listener() {
     override fun atom(e: SAtom) {
         when (e) {
             is SNull -> stream.write(Bytes.HYPHEN.toInt())
