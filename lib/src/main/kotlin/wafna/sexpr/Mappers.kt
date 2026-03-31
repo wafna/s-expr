@@ -405,5 +405,13 @@ class Mappers private constructor() {
         operator fun invoke(initializer: MapperRegistry.() -> Unit = {}): Mappers = Mappers().apply {
             MapperRegistry(this).initializer()
         }
+
+        private fun error(msg: String): Nothing = throw SExprError.Mapper(msg)
+        private inline fun require(value: Boolean, lazyMessage: () -> Any) {
+            if (!value) {
+                val message = lazyMessage()
+                error(message.toString())
+            }
+        }
     }
 }

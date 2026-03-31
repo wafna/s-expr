@@ -60,3 +60,5 @@ fun SAtom.asString(): String? = when (this) {
     is SBytes -> data.string()
     is SNull -> null
 }
+
+private fun error(msg: String): Nothing = throw SExprError.Type(msg)
