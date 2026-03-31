@@ -6,18 +6,12 @@ import java.util.*
 /**
  * Listens to events from the parser, thus "reading" the tokenized input.
  */
-interface Listener {
-    fun atom(e: SAtom)
+abstract class Listener {
+    abstract fun atom(e: SAtom)
+    internal abstract fun startList()
+    internal abstract fun endList()
     fun atom(bytes: ByteArray) = atom(SBytes(bytes))
     fun atom() = atom(SNull)
-    fun startList()
-    /**
-     * Signals whether the expression is complete.
-     */
-    fun endList()
-    /**
-     * Signals whether the expression is complete.
-     */
     fun list(f: () -> Unit) {
         startList()
         f()
@@ -28,7 +22,7 @@ interface Listener {
 /**
  * Builds the full expression tree from the parser.
  */
-class TreeBuilder : Listener {
+class TreeBuilder : Listener() {
     val exprs = Stack<SExpr>()
     val sizes = Stack<Int>().apply { push(0) }
     override fun atom(e: SAtom) {
@@ -47,13 +41,13 @@ class TreeBuilder : Listener {
     }
 
     fun finish(): SExpr = exprs.pop().also {
-        require(exprs.isEmpty()) {
-            "Malformed expression: unclosed list(s)."
+        if(!exprs.isEmpty()) {
+            throw SExprError.EOF("unclosed list(s).")
         }
     }
 }
 
-class StreamSink(private val stream: OutputStream) : Listener {
+class StreamSink(private val stream: OutputStream) : Listener() {
     override fun atom(e: SAtom) {
         when (e) {
             is SNull -> stream.write(Bytes.HYPHEN.toInt())

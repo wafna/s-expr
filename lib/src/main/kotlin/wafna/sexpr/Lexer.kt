@@ -29,7 +29,7 @@ internal fun lexer(input: ByteStream): Lexer = object : Lexer {
         currentToken.push(b)
     }
 
-    private fun error(msg: String): Nothing = throw SExprError.Syntax(line, column, msg)
+    private fun error(msg: String): Nothing = throw SExprError.Token(line, column, msg)
 
     fun currentBytes() = ByteArray(currentToken.size, { currentToken.pop() }).apply { reverse() }
 
