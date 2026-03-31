@@ -7,8 +7,7 @@ import java.io.ByteArrayOutputStream
 fun parse(input: String) = readSExpr(ByteStream.from(input))
 
 fun assertAtom(expected: SExpr, actual: String) {
-    val expected = expected as SBytes
-    assertEquals(expected.data.string(), actual)
+    assertEquals(expected.requireBytes().data.string(), actual)
 }
 
 fun compareSExpr(actual: SExpr, expected: SExpr) {
