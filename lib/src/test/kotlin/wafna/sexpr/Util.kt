@@ -38,7 +38,7 @@ fun compareSExpr(actual: SExpr, expected: SExpr) {
 inline fun <reified T> Mappers.testObject(expected: T) {
     val expr = toSExpr(expected)
     val canonical = expr.showSExpr()
-    println(canonical)
+    // println(canonical)
     val bytes = ByteArrayOutputStream().also {
         toSExpr(expected, StreamSink(it))
     }.toByteArray()
