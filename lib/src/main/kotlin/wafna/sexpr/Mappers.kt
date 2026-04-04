@@ -280,39 +280,41 @@ class Mappers private constructor() {
      */
     private fun registerSealed(kClass: KClass<*>) {
         require(kClass.isSealed) { "${kClass.qualifiedName} is not a sealed class." }
-        val typeAdapters = buildMap {
+        val typeAdapters = mutableMapOf<String, Adapter<out Any>>()
+        fun registerLevel(kClass: KClass<*>) {
             kClass.sealedSubclasses.forEach { subClass ->
                 if (subClass.isData && !adapters.contains(subClass)) {
                     val adapter = createDataAdapter(subClass)
                     adapters[subClass] = adapter
-                    put(subClass.simpleName!!, adapter)
+                    typeAdapters.put(subClass.qualifiedName!!, adapter)
                 } else if (subClass.isSealed) {
-                    registerSealed(subClass)
+                    registerLevel(subClass)
                 } else {
                     error("Only sealed and data classes allowed in hierarchy: ${subClass.qualifiedName}")
                 }
             }
-        }
-        if (!adapters.contains(kClass)) {
-            adapters[kClass] = object : Adapter<Any>() {
-                override fun toSExpr(obj: Any, listener: Listener) {
-                    listener.list {
-                        val objClass = obj::class
-                        val typeName = objClass.simpleName!!
-                        listener.atom(SBytes(typeName.bytes()))
-                        typeAdapters.getValue(typeName).proxyToSExpr(obj, listener)
+            if (!adapters.contains(kClass)) {
+                adapters[kClass] = object : Adapter<Any>() {
+                    override fun toSExpr(obj: Any, listener: Listener) {
+                        listener.list {
+                            val objClass = obj::class
+                            val typeName = objClass.qualifiedName!!
+                            listener.atom(SBytes(typeName.bytes()))
+                            typeAdapters.getValue(typeName).proxyToSExpr(obj, listener)
+                        }
                     }
-                }
 
-                override fun fromSExpr(expr: SExpr): Any {
-                    val items = expr.requireList().exprs
-                    val type = items[0].mapAtom { asString() }!!
-                    val adapter = typeAdapters.getValue(type)
-                    @Suppress("UNCHECKED_CAST")
-                    return adapter.proxyFromSExpr(items[1].requireList()) as Any
+                    override fun fromSExpr(expr: SExpr): Any {
+                        val items = expr.requireList().exprs
+                        val type = items[0].mapAtom { asString() }!!
+                        val adapter = typeAdapters.getValue(type)
+                        @Suppress("UNCHECKED_CAST")
+                        return adapter.proxyFromSExpr(items[1].requireList()) as Any
+                    }
                 }
             }
         }
+        registerLevel(kClass)
     }
 
     /**

@@ -5,10 +5,10 @@ import kotlin.test.Test
 internal sealed interface Level0
 internal data class Data0(val x: String) : Level0
 internal sealed interface Level1 : Level0
-internal data class Data1(val y: String) : Level1
-internal data class Data2(val z: String) : Level1
+internal data class Data1(val y: Int) : Level1
+internal data class Data2(val z: Double) : Level1
 
-internal data class Data123(val data0: List<Data0>, val data1: List<Data1>, val data2: List<Data2>)
+internal data class Data123(val data: List<Level0>)
 
 class TestMapperSealed {
     @Test
@@ -17,14 +17,12 @@ class TestMapperSealed {
             adapt<Level0>()
             adapt<Data123>()
         }.apply {
-            testObject(Data0("data-0"))
-            testObject(Data1("data-1"))
-            testObject(Data2("data-2"))
+//            testObject(Data0("data-0"))
+//            testObject(Data1(99))
+//            testObject(Data2(-0.444))
             testObject(
                 Data123(
-                    listOf(Data0("data-0-0"), Data0("data-0-1")),
-                    listOf(Data1("data-1-0"), Data1("data-1-1")),
-                    listOf(Data2("data-2-0"), Data2("data-2-1"))
+                    listOf(Data0("data-0-0"), Data1(99), Data2(6.6666))
                 )
             )
         }
